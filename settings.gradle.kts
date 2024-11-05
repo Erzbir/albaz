@@ -1,0 +1,10 @@
+rootProject.name = "albaz"
+include("albaz-di")
+include("albaz-context")
+include("albaz-plugin")
+include("albaz-api")
+include("albaz-core")
+include("albaz-boot")
+include("albaz-util")
+include("albaz-cglib")
+include("albaz-jcl")
