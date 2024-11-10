@@ -28,12 +28,12 @@ public /* need it for class loading  */ class FixedKeySet extends AbstractSet {
     }
 
     @Override
-	public Iterator iterator() {
+    public Iterator iterator() {
         return set.iterator();
     }
 
     @Override
-	public int size() {
+    public int size() {
         return size;
     }
 }

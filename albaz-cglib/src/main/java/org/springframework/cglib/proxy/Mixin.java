@@ -30,24 +30,18 @@ import java.util.*;
  * multiple objects to be combined into a single larger object. The
  * methods in the generated object simply call the original methods in the
  * underlying "delegate" objects.
+ *
  * @author Chris Nokleberg
  * @version $Id: Mixin.java,v 1.7 2005/09/27 11:42:27 baliuka Exp $
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 abstract public class Mixin {
-    private static final MixinKey KEY_FACTORY =
-      (MixinKey)KeyFactory.create(MixinKey.class, KeyFactory.CLASS_BY_NAME);
-    private static final Map ROUTE_CACHE = Collections.synchronizedMap(new HashMap());
-
     public static final int STYLE_INTERFACES = 0;
     public static final int STYLE_BEANS = 1;
     public static final int STYLE_EVERYTHING = 2;
-
-    interface MixinKey {
-        public Object newInstance(int style, String[] classes, int[] route);
-    }
-
-    abstract public Mixin newInstance(Object[] delegates);
+    private static final MixinKey KEY_FACTORY =
+            (MixinKey) KeyFactory.create(MixinKey.class, KeyFactory.CLASS_BY_NAME);
+    private static final Map ROUTE_CACHE = Collections.synchronizedMap(new HashMap());
 
     /**
      * Helper method to create an interface mixin. For finer control over the
@@ -74,25 +68,48 @@ abstract public class Mixin {
         return gen.create();
     }
 
-
     public static Mixin createBean(Object[] beans) {
 
         return createBean(null, beans);
 
     }
+
     /**
      * Helper method to create a bean mixin. For finer control over the
      * generated instance, use a new instance of <code>Mixin</code>
      * instead of this static method.
      * TODO
      */
-    public static Mixin createBean(ClassLoader loader,Object[] beans) {
+    public static Mixin createBean(ClassLoader loader, Object[] beans) {
         Generator gen = new Generator();
         gen.setStyle(STYLE_BEANS);
         gen.setDelegates(beans);
         gen.setClassLoader(loader);
         return gen.create();
     }
+
+    public static Class[] getClasses(Object[] delegates) {
+        return route(delegates).classes.clone();
+    }
+
+    private static Route route(Object[] delegates) {
+        Object key = ClassesKey.create(delegates);
+        Route route = (Route) ROUTE_CACHE.get(key);
+        if (route == null) {
+            ROUTE_CACHE.put(key, route = new Route(delegates));
+        }
+        return route;
+    }
+
+    abstract public Mixin newInstance(Object[] delegates);
+
+    interface MixinKey {
+        public Object newInstance(int style, String[] classes, int[] route);
+    }
+
+//     public static int[] getRoute(Object[] delegates) {
+//         return (int[])route(delegates).route.clone();
+//     }
 
     public static class Generator extends AbstractClassGenerator {
         private static final Source SOURCE = new Source(Mixin.class.getName());
@@ -119,13 +136,13 @@ abstract public class Mixin {
 
         public void setStyle(int style) {
             switch (style) {
-            case STYLE_INTERFACES:
-            case STYLE_BEANS:
-            case STYLE_EVERYTHING:
-                this.style = style;
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown mixin style: " + style);
+                case STYLE_INTERFACES:
+                case STYLE_BEANS:
+                case STYLE_EVERYTHING:
+                    this.style = style;
+                    break;
+                default:
+                    throw new IllegalArgumentException("Unknown mixin style: " + style);
             }
         }
 
@@ -142,82 +159,64 @@ abstract public class Mixin {
                 throw new IllegalStateException("Either classes or delegates must be set");
             }
             switch (style) {
-            case STYLE_INTERFACES:
-                if (classes == null) {
-                    Route r = route(delegates);
-                    classes = r.classes;
-                    route = r.route;
-                }
-                break;
-            case STYLE_BEANS:
-                // fall-through
-            case STYLE_EVERYTHING:
-                if (classes == null) {
-                    classes = ReflectUtils.getClasses(delegates);
-                } else {
-                    if (delegates != null) {
-                        Class[] temp = ReflectUtils.getClasses(delegates);
-                        if (classes.length != temp.length) {
-                            throw new IllegalStateException("Specified classes are incompatible with delegates");
-                        }
-                        for (int i = 0; i < classes.length; i++) {
-                            if (!classes[i].isAssignableFrom(temp[i])) {
-                                throw new IllegalStateException("Specified class " + classes[i] + " is incompatible with delegate class " + temp[i] + " (index " + i + ")");
+                case STYLE_INTERFACES:
+                    if (classes == null) {
+                        Route r = route(delegates);
+                        classes = r.classes;
+                        route = r.route;
+                    }
+                    break;
+                case STYLE_BEANS:
+                    // fall-through
+                case STYLE_EVERYTHING:
+                    if (classes == null) {
+                        classes = ReflectUtils.getClasses(delegates);
+                    } else {
+                        if (delegates != null) {
+                            Class[] temp = ReflectUtils.getClasses(delegates);
+                            if (classes.length != temp.length) {
+                                throw new IllegalStateException("Specified classes are incompatible with delegates");
+                            }
+                            for (int i = 0; i < classes.length; i++) {
+                                if (!classes[i].isAssignableFrom(temp[i])) {
+                                    throw new IllegalStateException("Specified class " + classes[i] + " is incompatible with delegate class " + temp[i] + " (index " + i + ")");
+                                }
                             }
                         }
                     }
-                }
             }
             setNamePrefix(classes[ReflectUtils.findPackageProtected(classes)].getName());
 
-            return (Mixin)super.create(KEY_FACTORY.newInstance(style, ReflectUtils.getNames( classes ), route));
+            return (Mixin) super.create(KEY_FACTORY.newInstance(style, ReflectUtils.getNames(classes), route));
         }
 
         @Override
         public void generateClass(ClassVisitor v) {
             switch (style) {
-            case STYLE_INTERFACES:
-                new MixinEmitter(v, getClassName(), classes, route);
-                break;
-            case STYLE_BEANS:
-                new MixinBeanEmitter(v, getClassName(), classes);
-                break;
-            case STYLE_EVERYTHING:
-                new MixinEverythingEmitter(v, getClassName(), classes);
-                break;
+                case STYLE_INTERFACES:
+                    new MixinEmitter(v, getClassName(), classes, route);
+                    break;
+                case STYLE_BEANS:
+                    new MixinBeanEmitter(v, getClassName(), classes);
+                    break;
+                case STYLE_EVERYTHING:
+                    new MixinEverythingEmitter(v, getClassName(), classes);
+                    break;
             }
         }
 
         @Override
         protected Object firstInstance(Class type) {
-            return ((Mixin)ReflectUtils.newInstance(type)).newInstance(delegates);
+            return ((Mixin) ReflectUtils.newInstance(type)).newInstance(delegates);
         }
 
         @Override
         protected Object nextInstance(Object instance) {
-            return ((Mixin)instance).newInstance(delegates);
+            return ((Mixin) instance).newInstance(delegates);
         }
     }
 
-    public static Class[] getClasses(Object[] delegates) {
-        return route(delegates).classes.clone();
-    }
-
-//     public static int[] getRoute(Object[] delegates) {
-//         return (int[])route(delegates).route.clone();
-//     }
-
-    private static Route route(Object[] delegates) {
-        Object key = ClassesKey.create(delegates);
-        Route route = (Route)ROUTE_CACHE.get(key);
-        if (route == null) {
-            ROUTE_CACHE.put(key, route = new Route(delegates));
-        }
-        return route;
-    }
-
-    private static class Route
-    {
+    private static class Route {
         private Class[] classes;
         private int[] route;
 
@@ -228,8 +227,8 @@ abstract public class Mixin {
                 Class delegate = delegates[i].getClass();
                 collect.clear();
                 ReflectUtils.addAllInterfaces(delegate, collect);
-                for (Iterator it = collect.iterator(); it.hasNext();) {
-                    Class iface = (Class)it.next();
+                for (Iterator it = collect.iterator(); it.hasNext(); ) {
+                    Class iface = (Class) it.next();
                     if (!map.containsKey(iface)) {
                         map.put(iface, i);
                     }
@@ -238,10 +237,10 @@ abstract public class Mixin {
             classes = new Class[map.size()];
             route = new int[map.size()];
             int index = 0;
-            for (Iterator it = map.keySet().iterator(); it.hasNext();) {
-                Class key = (Class)it.next();
+            for (Iterator it = map.keySet().iterator(); it.hasNext(); ) {
+                Class key = (Class) it.next();
                 classes[index] = key;
-                route[index] = ((Integer)map.get(key));
+                route[index] = ((Integer) map.get(key));
                 index++;
             }
         }

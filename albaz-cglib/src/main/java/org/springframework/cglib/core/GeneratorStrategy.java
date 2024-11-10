@@ -23,11 +23,13 @@ package org.springframework.cglib.core;
  * it is loaded. Typically this will be accomplished by subclassing
  * {@link DefaultGeneratorStrategy} and overriding the appropriate
  * protected method.
+ *
  * @see AbstractClassGenerator#setStrategy
  */
 public interface GeneratorStrategy {
     /**
      * Generate the class.
+     *
      * @param cg a class generator on which you can call {@link ClassGenerator#generateClass}
      * @return a byte array containing the bits of a valid Class
      */
@@ -41,5 +43,5 @@ public interface GeneratorStrategy {
      * to avoid generating too many classes.
      */
     @Override
-	boolean equals(Object o);
+    boolean equals(Object o);
 }

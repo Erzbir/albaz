@@ -31,21 +31,21 @@ import java.util.Set;
 class MixinEmitter extends ClassEmitter {
     private static final String FIELD_NAME = "CGLIB$DELEGATES";
     private static final Signature CSTRUCT_OBJECT_ARRAY =
-      TypeUtils.parseConstructor("Object[]");
+            TypeUtils.parseConstructor("Object[]");
     private static final Type MIXIN =
-      TypeUtils.parseType("org.springframework.cglib.proxy.Mixin");
+            TypeUtils.parseType("org.springframework.cglib.proxy.Mixin");
     private static final Signature NEW_INSTANCE =
-      new Signature("newInstance", MIXIN, new Type[]{ Constants.TYPE_OBJECT_ARRAY });
+            new Signature("newInstance", MIXIN, new Type[]{Constants.TYPE_OBJECT_ARRAY});
 
     public MixinEmitter(ClassVisitor v, String className, Class[] classes, int[] route) {
         super(v);
 
         begin_class(Constants.V1_8,
-                    Constants.ACC_PUBLIC,
-                    className,
-                    MIXIN,
-                    TypeUtils.getTypes(getInterfaces(classes)),
-                    Constants.SOURCE_FILE);
+                Constants.ACC_PUBLIC,
+                className,
+                MIXIN,
+                TypeUtils.getTypes(getInterfaces(classes)),
+                Constants.SOURCE_FILE);
         EmitUtils.null_constructor(this);
         EmitUtils.factory_method(this, NEW_INSTANCE);
 

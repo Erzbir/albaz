@@ -17,8 +17,7 @@
 package org.springframework.cglib.transform;
 
 /**
- *
- * @author  baliuka
+ * @author baliuka
  */
 public interface ClassFilter {
 

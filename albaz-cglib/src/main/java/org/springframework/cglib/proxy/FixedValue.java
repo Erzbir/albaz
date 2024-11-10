@@ -28,6 +28,7 @@ public interface FixedValue extends Callback {
     /**
      * Return the object which the original method invocation should
      * return. This method is called for <b>every</b> method invocation.
+     *
      * @return an object matching the type of the return value for every
      * method this callback is mapped to
      */

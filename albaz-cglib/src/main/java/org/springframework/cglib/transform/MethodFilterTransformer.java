@@ -31,7 +31,7 @@ public class MethodFilterTransformer extends AbstractClassTransformer {
     }
 
     @Override
-	public MethodVisitor visitMethod(int access,
+    public MethodVisitor visitMethod(int access,
                                      String name,
                                      String desc,
                                      String signature,
@@ -40,7 +40,7 @@ public class MethodFilterTransformer extends AbstractClassTransformer {
     }
 
     @Override
-	public void setTarget(ClassVisitor target) {
+    public void setTarget(ClassVisitor target) {
         pass.setTarget(target);
         direct = target;
     }

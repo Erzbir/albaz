@@ -19,8 +19,7 @@ package org.springframework.cglib.core;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 
-public class MethodInfoTransformer implements Transformer
-{
+public class MethodInfoTransformer implements Transformer {
     private static final MethodInfoTransformer INSTANCE = new MethodInfoTransformer();
 
     public static MethodInfoTransformer getInstance() {

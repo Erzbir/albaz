@@ -25,7 +25,7 @@ abstract public class AbstractClassTransformer extends ClassTransformer {
     }
 
     @Override
-	public void setTarget(ClassVisitor target) {
+    public void setTarget(ClassVisitor target) {
         cv = target;
     }
 }

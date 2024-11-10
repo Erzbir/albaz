@@ -25,14 +25,14 @@ import java.util.List;
 class FixedValueGenerator implements CallbackGenerator {
     public static final FixedValueGenerator INSTANCE = new FixedValueGenerator();
     private static final Type FIXED_VALUE =
-      TypeUtils.parseType("org.springframework.cglib.proxy.FixedValue");
+            TypeUtils.parseType("org.springframework.cglib.proxy.FixedValue");
     private static final Signature LOAD_OBJECT =
-      TypeUtils.parseSignature("Object loadObject()");
+            TypeUtils.parseSignature("Object loadObject()");
 
     @Override
-	public void generate(ClassEmitter ce, Context context, List methods) {
-        for (Iterator it = methods.iterator(); it.hasNext();) {
-            MethodInfo method = (MethodInfo)it.next();
+    public void generate(ClassEmitter ce, Context context, List methods) {
+        for (Iterator it = methods.iterator(); it.hasNext(); ) {
+            MethodInfo method = (MethodInfo) it.next();
             CodeEmitter e = context.beginMethod(ce, method);
             context.emitCallback(e, context.getIndex(method));
             e.invoke_interface(FIXED_VALUE, LOAD_OBJECT);
@@ -43,5 +43,6 @@ class FixedValueGenerator implements CallbackGenerator {
     }
 
     @Override
-	public void generateStatic(CodeEmitter e, Context context, List methods) { }
+    public void generateStatic(CodeEmitter e, Context context, List methods) {
+    }
 }

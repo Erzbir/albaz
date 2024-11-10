@@ -56,14 +56,13 @@ abstract public class ParallelSorter extends SorterTemplate {
     protected ParallelSorter() {
     }
 
-    abstract public ParallelSorter newInstance(Object[] arrays);
-
     /**
      * Create a new ParallelSorter object for a set of arrays. You may
      * sort the arrays multiple times via the same ParallelSorter object.
+     *
      * @param arrays An array of arrays to sort. The arrays may be a mix
-     * of primitive and non-primitive types, but should all be the same
-     * length.
+     *               of primitive and non-primitive types, but should all be the same
+     *               length.
      */
     public static ParallelSorter create(Object[] arrays) {
         Generator gen = new Generator();
@@ -71,12 +70,15 @@ abstract public class ParallelSorter extends SorterTemplate {
         return gen.create();
     }
 
+    abstract public ParallelSorter newInstance(Object[] arrays);
+
     private int len() {
-        return ((Object[])a[0]).length;
+        return ((Object[]) a[0]).length;
     }
 
     /**
      * Sort the arrays using the quicksort algorithm.
+     *
      * @param index array (column) to sort by
      */
     public void quickSort(int index) {
@@ -85,9 +87,10 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     /**
      * Sort the arrays using the quicksort algorithm.
+     *
      * @param index array (column) to sort by
-     * @param lo starting array index (row), inclusive
-     * @param hi ending array index (row), exclusive
+     * @param lo    starting array index (row), inclusive
+     * @param hi    ending array index (row), exclusive
      */
     public void quickSort(int index, int lo, int hi) {
         quickSort(index, lo, hi, null);
@@ -95,8 +98,9 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     /**
      * Sort the arrays using the quicksort algorithm.
+     *
      * @param index array (column) to sort by
-     * @param cmp Comparator to use if the specified column is non-primitive
+     * @param cmp   Comparator to use if the specified column is non-primitive
      */
     public void quickSort(int index, Comparator cmp) {
         quickSort(index, 0, len(), cmp);
@@ -104,10 +108,11 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     /**
      * Sort the arrays using the quicksort algorithm.
+     *
      * @param index array (column) to sort by
-     * @param lo starting array index (row), inclusive
-     * @param hi ending array index (row), exclusive
-     * @param cmp Comparator to use if the specified column is non-primitive
+     * @param lo    starting array index (row), inclusive
+     * @param hi    ending array index (row), exclusive
+     * @param cmp   Comparator to use if the specified column is non-primitive
      */
     public void quickSort(int index, int lo, int hi, Comparator cmp) {
         chooseComparer(index, cmp);
@@ -123,9 +128,10 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     /**
      * Sort the arrays using an in-place merge sort.
+     *
      * @param index array (column) to sort by
-     * @param lo starting array index (row), inclusive
-     * @param hi ending array index (row), exclusive
+     * @param lo    starting array index (row), inclusive
+     * @param hi    ending array index (row), exclusive
      */
     public void mergeSort(int index, int lo, int hi) {
         mergeSort(index, lo, hi, null);
@@ -133,8 +139,9 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     /**
      * Sort the arrays using an in-place merge sort.
+     *
      * @param index array (column) to sort by
-     * @param cmp Comparator to use if the specified column is non-primitive
+     * @param cmp   Comparator to use if the specified column is non-primitive
      */
     public void mergeSort(int index, Comparator cmp) {
         mergeSort(index, 0, len(), cmp);
@@ -142,10 +149,11 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     /**
      * Sort the arrays using an in-place merge sort.
+     *
      * @param index array (column) to sort by
-     * @param lo starting array index (row), inclusive
-     * @param hi ending array index (row), exclusive
-     * @param cmp Comparator to use if the specified column is non-primitive
+     * @param lo    starting array index (row), inclusive
+     * @param hi    ending array index (row), exclusive
+     * @param cmp   Comparator to use if the specified column is non-primitive
      */
     public void mergeSort(int index, int lo, int hi, Comparator cmp) {
         chooseComparer(index, cmp);
@@ -156,21 +164,21 @@ abstract public class ParallelSorter extends SorterTemplate {
         Object array = a[index];
         Class type = array.getClass().componentType();
         if (type.equals(Integer.TYPE)) {
-            comparer = new IntComparer((int[])array);
+            comparer = new IntComparer((int[]) array);
         } else if (type.equals(Long.TYPE)) {
-            comparer = new LongComparer((long[])array);
+            comparer = new LongComparer((long[]) array);
         } else if (type.equals(Double.TYPE)) {
-            comparer = new DoubleComparer((double[])array);
+            comparer = new DoubleComparer((double[]) array);
         } else if (type.equals(Float.TYPE)) {
-            comparer = new FloatComparer((float[])array);
+            comparer = new FloatComparer((float[]) array);
         } else if (type.equals(Short.TYPE)) {
-            comparer = new ShortComparer((short[])array);
+            comparer = new ShortComparer((short[]) array);
         } else if (type.equals(Byte.TYPE)) {
-            comparer = new ByteComparer((byte[])array);
+            comparer = new ByteComparer((byte[]) array);
         } else if (cmp != null) {
-            comparer = new ComparatorComparer((Object[])array, cmp);
+            comparer = new ComparatorComparer((Object[]) array, cmp);
         } else {
-            comparer = new ObjectComparer((Object[])array);
+            comparer = new ObjectComparer((Object[]) array);
         }
     }
 
@@ -200,23 +208,37 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     static class ObjectComparer implements Comparer {
         private final Object[] a;
-        public ObjectComparer(Object[] a) { this.a = a; }
+
+        public ObjectComparer(Object[] a) {
+            this.a = a;
+        }
+
         @Override
         public int compare(int i, int j) {
-            return ((Comparable)a[i]).compareTo(a[j]);
+            return ((Comparable) a[i]).compareTo(a[j]);
         }
     }
 
     static class IntComparer implements Comparer {
         private final int[] a;
-        public IntComparer(int[] a) { this.a = a; }
+
+        public IntComparer(int[] a) {
+            this.a = a;
+        }
+
         @Override
-        public int compare(int i, int j) { return a[i] - a[j]; }
+        public int compare(int i, int j) {
+            return a[i] - a[j];
+        }
     }
 
     static class LongComparer implements Comparer {
         private final long[] a;
-        public LongComparer(long[] a) { this.a = a; }
+
+        public LongComparer(long[] a) {
+            this.a = a;
+        }
+
         @Override
         public int compare(int i, int j) {
             long vi = a[i];
@@ -227,7 +249,11 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     static class FloatComparer implements Comparer {
         private final float[] a;
-        public FloatComparer(float[] a) { this.a = a; }
+
+        public FloatComparer(float[] a) {
+            this.a = a;
+        }
+
         @Override
         public int compare(int i, int j) {
             float vi = a[i];
@@ -238,7 +264,11 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     static class DoubleComparer implements Comparer {
         private final double[] a;
-        public DoubleComparer(double[] a) { this.a = a; }
+
+        public DoubleComparer(double[] a) {
+            this.a = a;
+        }
+
         @Override
         public int compare(int i, int j) {
             double vi = a[i];
@@ -249,16 +279,28 @@ abstract public class ParallelSorter extends SorterTemplate {
 
     static class ShortComparer implements Comparer {
         private final short[] a;
-        public ShortComparer(short[] a) { this.a = a; }
+
+        public ShortComparer(short[] a) {
+            this.a = a;
+        }
+
         @Override
-        public int compare(int i, int j) { return a[i] - a[j]; }
+        public int compare(int i, int j) {
+            return a[i] - a[j];
+        }
     }
 
     static class ByteComparer implements Comparer {
         private final byte[] a;
-        public ByteComparer(byte[] a) { this.a = a; }
+
+        public ByteComparer(byte[] a) {
+            this.a = a;
+        }
+
         @Override
-        public int compare(int i, int j) { return a[i] - a[j]; }
+        public int compare(int i, int j) {
+            return a[i] - a[j];
+        }
     }
 
     public static class Generator extends AbstractClassGenerator {
@@ -280,7 +322,7 @@ abstract public class ParallelSorter extends SorterTemplate {
         }
 
         public ParallelSorter create() {
-            return (ParallelSorter)super.create(ClassesKey.create(arrays));
+            return (ParallelSorter) super.create(ClassesKey.create(arrays));
         }
 
         @Override
@@ -298,12 +340,12 @@ abstract public class ParallelSorter extends SorterTemplate {
 
         @Override
         protected Object firstInstance(Class type) {
-            return ((ParallelSorter)ReflectUtils.newInstance(type)).newInstance(arrays);
+            return ((ParallelSorter) ReflectUtils.newInstance(type)).newInstance(arrays);
         }
 
         @Override
         protected Object nextInstance(Object instance) {
-            return ((ParallelSorter)instance).newInstance(arrays);
+            return ((ParallelSorter) instance).newInstance(arrays);
         }
     }
 }

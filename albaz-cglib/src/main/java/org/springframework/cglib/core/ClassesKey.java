@@ -16,11 +16,7 @@
 package org.springframework.cglib.core;
 
 public class ClassesKey {
-    private static final Key FACTORY = (Key)KeyFactory.create(Key.class);
-
-    interface Key {
-        Object newInstance(Object[] array);
-    }
+    private static final Key FACTORY = (Key) KeyFactory.create(Key.class);
 
     private ClassesKey() {
     }
@@ -42,5 +38,9 @@ public class ClassesKey {
             }
         }
         return classNames;
+    }
+
+    interface Key {
+        Object newInstance(Object[] array);
     }
 }

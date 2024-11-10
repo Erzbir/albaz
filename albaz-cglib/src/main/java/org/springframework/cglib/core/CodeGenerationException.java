@@ -28,7 +28,7 @@ public class CodeGenerationException extends RuntimeException {
     }
 
     @Override
-	public Throwable getCause() {
+    public Throwable getCause() {
         return cause;
     }
 }

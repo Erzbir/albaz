@@ -2,18 +2,19 @@ plugins {
     id("java")
 }
 
-group = "com.erzbir"
-version = "1.0.0"
-
-repositories {
-    mavenCentral()
+dependencies {
+    implementation(project(":albaz-common"))
 }
 
-dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+tasks.withType<JavaExec> {
+    jvmArgs("-verbose:class")
+}
+
+tasks.register<JavaExec>("Hot Load Debug") {
+    jvmArgs("-verbose:class")
 }
 
 tasks.test {
     useJUnitPlatform()
+//    jvmArgs("-verbose:class")
 }

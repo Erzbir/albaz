@@ -31,20 +31,20 @@ public class DebuggingClassWriter extends ClassVisitor {
     private static String debugLocation;
     private static Constructor traceCtor;
 
-    private String className;
-    private String superName;
-
     static {
         debugLocation = System.getProperty(DEBUG_LOCATION_PROPERTY);
         if (debugLocation != null) {
             System.err.println("CGLIB debugging enabled, writing to '" + debugLocation + "'");
             try {
-              Class clazz = Class.forName("org.springframework.asm.util.TraceClassVisitor");
-              traceCtor = clazz.getConstructor(new Class[]{ClassVisitor.class, PrintWriter.class});
+                Class clazz = Class.forName("org.springframework.asm.util.TraceClassVisitor");
+                traceCtor = clazz.getConstructor(new Class[]{ClassVisitor.class, PrintWriter.class});
             } catch (Throwable ignore) {
             }
         }
     }
+
+    private String className;
+    private String superName;
 
     public DebuggingClassWriter(int flags) {
         super(Constants.ASM_API, new ClassWriter(flags));
@@ -72,38 +72,38 @@ public class DebuggingClassWriter extends ClassVisitor {
 
     public byte[] toByteArray() {
 
-		byte[] b = ((ClassWriter) DebuggingClassWriter.super.cv).toByteArray();
-		if (debugLocation != null) {
-			String dirs = className.replace('.', File.separatorChar);
-			try {
-				new File(debugLocation + File.separatorChar + dirs).getParentFile().mkdirs();
+        byte[] b = ((ClassWriter) DebuggingClassWriter.super.cv).toByteArray();
+        if (debugLocation != null) {
+            String dirs = className.replace('.', File.separatorChar);
+            try {
+                new File(debugLocation + File.separatorChar + dirs).getParentFile().mkdirs();
 
-				File file = new File(new File(debugLocation), dirs + ".class");
-				OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
-				try {
-					out.write(b);
-				} finally {
-					out.close();
-				}
+                File file = new File(new File(debugLocation), dirs + ".class");
+                OutputStream out = new BufferedOutputStream(new FileOutputStream(file));
+                try {
+                    out.write(b);
+                } finally {
+                    out.close();
+                }
 
-				if (traceCtor != null) {
-					file = new File(new File(debugLocation), dirs + ".asm");
-					out = new BufferedOutputStream(new FileOutputStream(file));
-					try {
-						ClassReader cr = new ClassReader(b);
-						PrintWriter pw = new PrintWriter(new OutputStreamWriter(out));
-						ClassVisitor tcv = (ClassVisitor)traceCtor.newInstance(new Object[]{null, pw});
-						cr.accept(tcv, 0);
-						pw.flush();
-					} finally {
-						out.close();
-					}
-				}
-			} catch (Exception e) {
-				throw new CodeGenerationException(e);
-			}
-		}
-		return b;
-	 }
+                if (traceCtor != null) {
+                    file = new File(new File(debugLocation), dirs + ".asm");
+                    out = new BufferedOutputStream(new FileOutputStream(file));
+                    try {
+                        ClassReader cr = new ClassReader(b);
+                        PrintWriter pw = new PrintWriter(new OutputStreamWriter(out));
+                        ClassVisitor tcv = (ClassVisitor) traceCtor.newInstance(new Object[]{null, pw});
+                        cr.accept(tcv, 0);
+                        pw.flush();
+                    } finally {
+                        out.close();
+                    }
+                }
+            } catch (Exception e) {
+                throw new CodeGenerationException(e);
+            }
+        }
+        return b;
+    }
 
 }

@@ -25,18 +25,14 @@ import java.util.List;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class ClassNameReader {
 
-	private ClassNameReader() {
-	}
+    private static final EarlyExitException EARLY_EXIT = new EarlyExitException();
 
-	private static final EarlyExitException EARLY_EXIT = new EarlyExitException();
+    private ClassNameReader() {
+    }
 
-	@SuppressWarnings("serial")
-	private static class EarlyExitException extends RuntimeException {
-	}
-
-	public static String getClassName(ClassReader r) {
-		return getClassInfo(r)[0];
-	}
+    public static String getClassName(ClassReader r) {
+        return getClassInfo(r)[0];
+    }
 
     public static String[] getClassInfo(ClassReader r) {
         final List<String> array = new ArrayList<>();
@@ -51,17 +47,22 @@ public class ClassNameReader {
                                   String[] interfaces) {
                     array.add(name.replace('/', '.'));
                     if (superName != null) {
-                       array.add(superName.replace('/', '.'));
+                        array.add(superName.replace('/', '.'));
                     }
                     for (String element : interfaces) {
-                       array.add(element.replace('/', '.'));
+                        array.add(element.replace('/', '.'));
                     }
 
                     throw EARLY_EXIT;
                 }
             }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-        } catch (EarlyExitException e) { }
+        } catch (EarlyExitException e) {
+        }
 
         return array.toArray(new String[0]);
+    }
+
+    @SuppressWarnings("serial")
+    private static class EarlyExitException extends RuntimeException {
     }
 }

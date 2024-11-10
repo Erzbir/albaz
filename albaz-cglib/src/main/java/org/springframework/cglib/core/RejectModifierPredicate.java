@@ -25,7 +25,7 @@ public class RejectModifierPredicate implements Predicate {
     }
 
     @Override
-	public boolean evaluate(Object arg) {
-        return (((Member)arg).getModifiers() & rejectMask) == 0;
+    public boolean evaluate(Object arg) {
+        return (((Member) arg).getModifiers() & rejectMask) == 0;
     }
 }

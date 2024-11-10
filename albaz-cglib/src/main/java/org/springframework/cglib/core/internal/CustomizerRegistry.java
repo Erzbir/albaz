@@ -14,6 +14,16 @@ public class CustomizerRegistry {
         this.customizerTypes = customizerTypes;
     }
 
+    /**
+     * @deprecated Only to keep backward compatibility.
+     */
+    @Deprecated
+    public static CustomizerRegistry singleton(Customizer customizer) {
+        CustomizerRegistry registry = new CustomizerRegistry(new Class[]{Customizer.class});
+        registry.add(customizer);
+        return registry;
+    }
+
     public void add(KeyFactoryCustomizer customizer) {
         Class<? extends KeyFactoryCustomizer> klass = customizer.getClass();
         for (Class type : customizerTypes) {
@@ -30,16 +40,5 @@ public class CustomizerRegistry {
             return Collections.emptyList();
         }
         return (List<T>) list;
-    }
-
-    /**
-     * @deprecated Only to keep backward compatibility.
-     */
-    @Deprecated
-    public static CustomizerRegistry singleton(Customizer customizer)
-    {
-        CustomizerRegistry registry = new CustomizerRegistry(new Class[]{Customizer.class});
-        registry.add(customizer);
-        return registry;
     }
 }

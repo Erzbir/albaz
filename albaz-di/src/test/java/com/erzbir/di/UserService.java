@@ -1,11 +1,11 @@
 package com.erzbir.di;
 
-import com.erzbir.di.beans.annotation.Autowired;
-import com.erzbir.di.beans.annotation.Component;
-import com.erzbir.di.beans.annotation.Scope;
-import com.erzbir.di.beans.aware.BeanNameAware;
-import com.erzbir.di.context.InitializingBean;
-import com.erzbir.di.enums.ScopeEnum;
+import com.erzbir.albaz.di.beans.annotation.Autowired;
+import com.erzbir.albaz.di.beans.annotation.Component;
+import com.erzbir.albaz.di.beans.annotation.Scope;
+import com.erzbir.albaz.di.beans.aware.BeanNameAware;
+import com.erzbir.albaz.di.context.InitializingBean;
+import com.erzbir.albaz.di.enums.ScopeEnum;
 
 /**
  * @author mafei007

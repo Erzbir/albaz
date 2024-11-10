@@ -1,7 +1,7 @@
 package com.erzbir.di;
 
-import com.erzbir.di.beans.annotation.ComponentScan;
-import com.erzbir.di.context.suppport.AnnotationConfigApplicationContext;
+import com.erzbir.albaz.di.beans.annotation.ComponentScan;
+import com.erzbir.albaz.di.context.suppport.AnnotationConfigApplicationContext;
 
 /**
  * @author mafei007
@@ -10,7 +10,7 @@ import com.erzbir.di.context.suppport.AnnotationConfigApplicationContext;
 @ComponentScan("com.erzbir.di")
 public class Test {
     public static void main(String[] args) throws Exception {
-        AnnotationConfigApplicationContext annotationApplicationContext = new AnnotationConfigApplicationContext(Test.class);
+        AnnotationConfigApplicationContext annotationApplicationContext = new AnnotationConfigApplicationContext(ProxyTest.class);
 //        annotationApplicationContext.refresh();
         System.out.println("=================beanNames=================");
         for (String beanName : annotationApplicationContext.getBeanDefinitionNames()) {

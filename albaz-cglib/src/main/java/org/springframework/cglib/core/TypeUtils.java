@@ -24,9 +24,6 @@ public class TypeUtils {
     private static final Map transforms = new HashMap();
     private static final Map rtransforms = new HashMap();
 
-    private TypeUtils() {
-    }
-
     static {
         transforms.put("void", "V");
         transforms.put("byte", "B");
@@ -39,6 +36,9 @@ public class TypeUtils {
         transforms.put("boolean", "Z");
 
         CollectionUtils.reverse(transforms, rtransforms);
+    }
+
+    private TypeUtils() {
     }
 
     public static Type getType(String className) {
@@ -78,7 +78,7 @@ public class TypeUtils {
     }
 
     public static boolean isBridge(int access) {
-    	return (Constants.ACC_BRIDGE & access) != 0;
+        return (Constants.ACC_BRIDGE & access) != 0;
     }
 
     // getPackage returns null on JDK 1.2
@@ -100,7 +100,7 @@ public class TypeUtils {
 
     public static String getClassName(Type type) {
         if (isPrimitive(type)) {
-            return (String)rtransforms.get(type.getDescriptor());
+            return (String) rtransforms.get(type.getDescriptor());
         } else if (isArray(type)) {
             return getClassName(getComponentType(type)) + "[]";
         } else {
@@ -110,7 +110,7 @@ public class TypeUtils {
 
     public static Type[] add(Type[] types, Type extra) {
         if (types == null) {
-            return new Type[]{ extra };
+            return new Type[]{extra};
         } else {
             List list = Arrays.asList(types);
             if (list.contains(extra)) {
@@ -172,9 +172,9 @@ public class TypeUtils {
         int rparen = s.indexOf(')', lparen);
         String returnType = s.substring(0, space);
         String methodName = s.substring(space + 1, lparen);
-		StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         sb.append('(');
-        for (Iterator it = parseTypes(s, lparen + 1, rparen).iterator(); it.hasNext();) {
+        for (Iterator it = parseTypes(s, lparen + 1, rparen).iterator(); it.hasNext(); ) {
             sb.append(it.next());
         }
         sb.append(')');
@@ -190,13 +190,13 @@ public class TypeUtils {
         List names = parseTypes(s, 0, s.length());
         Type[] types = new Type[names.size()];
         for (int i = 0; i < types.length; i++) {
-            types[i] = Type.getType((String)names.get(i));
+            types[i] = Type.getType((String) names.get(i));
         }
         return types;
     }
 
     public static Signature parseConstructor(Type[] types) {
-		StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         sb.append("(");
         for (Type type : types) {
             sb.append(type.getDescriptor());
@@ -212,7 +212,7 @@ public class TypeUtils {
 
     private static List parseTypes(String s, int mark, int end) {
         List types = new ArrayList(5);
-        for (;;) {
+        for (; ; ) {
             int next = s.indexOf(',', mark);
             if (next < 0) {
                 break;
@@ -228,13 +228,13 @@ public class TypeUtils {
         if (type.isEmpty()) {
             return type;
         }
-        String t = (String)transforms.get(type);
+        String t = (String) transforms.get(type);
         if (t != null) {
             return t;
         } else if (type.indexOf('.') < 0) {
             return map("java.lang." + type);
         } else {
-			StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             int index = 0;
             while ((index = type.indexOf("[]", index) + 1) > 0) {
                 sb.append('[');
@@ -246,17 +246,17 @@ public class TypeUtils {
     }
 
     public static Type getBoxedType(Type type) {
-		return switch (type.getSort()) {
-			case Type.CHAR -> Constants.TYPE_CHARACTER;
-			case Type.BOOLEAN -> Constants.TYPE_BOOLEAN;
-			case Type.DOUBLE -> Constants.TYPE_DOUBLE;
-			case Type.FLOAT -> Constants.TYPE_FLOAT;
-			case Type.LONG -> Constants.TYPE_LONG;
-			case Type.INT -> Constants.TYPE_INTEGER;
-			case Type.SHORT -> Constants.TYPE_SHORT;
-			case Type.BYTE -> Constants.TYPE_BYTE;
-			default -> type;
-		};
+        return switch (type.getSort()) {
+            case Type.CHAR -> Constants.TYPE_CHARACTER;
+            case Type.BOOLEAN -> Constants.TYPE_BOOLEAN;
+            case Type.DOUBLE -> Constants.TYPE_DOUBLE;
+            case Type.FLOAT -> Constants.TYPE_FLOAT;
+            case Type.LONG -> Constants.TYPE_LONG;
+            case Type.INT -> Constants.TYPE_INTEGER;
+            case Type.SHORT -> Constants.TYPE_SHORT;
+            case Type.BYTE -> Constants.TYPE_BYTE;
+            default -> type;
+        };
     }
 
     public static Type getUnboxedType(Type type) {
@@ -293,10 +293,10 @@ public class TypeUtils {
     }
 
     public static boolean isPrimitive(Type type) {
-		return switch (type.getSort()) {
-			case Type.ARRAY, Type.OBJECT -> false;
-			default -> true;
-		};
+        return switch (type.getSort()) {
+            case Type.ARRAY, Type.OBJECT -> false;
+            default -> true;
+        };
     }
 
     public static String emulateClassGetName(Type type) {
@@ -323,17 +323,17 @@ public class TypeUtils {
     }
 
     public static int ICONST(int value) {
-		return switch (value) {
-			case -1 -> Constants.ICONST_M1;
-			case 0 -> Constants.ICONST_0;
-			case 1 -> Constants.ICONST_1;
-			case 2 -> Constants.ICONST_2;
-			case 3 -> Constants.ICONST_3;
-			case 4 -> Constants.ICONST_4;
-			case 5 -> Constants.ICONST_5;
-			default -> -1; // error
-		};
-	}
+        return switch (value) {
+            case -1 -> Constants.ICONST_M1;
+            case 0 -> Constants.ICONST_0;
+            case 1 -> Constants.ICONST_1;
+            case 2 -> Constants.ICONST_2;
+            case 3 -> Constants.ICONST_3;
+            case 4 -> Constants.ICONST_4;
+            case 5 -> Constants.ICONST_5;
+            default -> -1; // error
+        };
+    }
 
     public static int LCONST(long value) {
         if (value == 0L) {
@@ -368,33 +368,33 @@ public class TypeUtils {
     }
 
     public static int NEWARRAY(Type type) {
-		return switch (type.getSort()) {
-			case Type.BYTE -> Constants.T_BYTE;
-			case Type.CHAR -> Constants.T_CHAR;
-			case Type.DOUBLE -> Constants.T_DOUBLE;
-			case Type.FLOAT -> Constants.T_FLOAT;
-			case Type.INT -> Constants.T_INT;
-			case Type.LONG -> Constants.T_LONG;
-			case Type.SHORT -> Constants.T_SHORT;
-			case Type.BOOLEAN -> Constants.T_BOOLEAN;
-			default -> -1; // error
-		};
+        return switch (type.getSort()) {
+            case Type.BYTE -> Constants.T_BYTE;
+            case Type.CHAR -> Constants.T_CHAR;
+            case Type.DOUBLE -> Constants.T_DOUBLE;
+            case Type.FLOAT -> Constants.T_FLOAT;
+            case Type.INT -> Constants.T_INT;
+            case Type.LONG -> Constants.T_LONG;
+            case Type.SHORT -> Constants.T_SHORT;
+            case Type.BOOLEAN -> Constants.T_BOOLEAN;
+            default -> -1; // error
+        };
     }
 
     public static String escapeType(String s) {
-		StringBuilder sb = new StringBuilder();
+        StringBuilder sb = new StringBuilder();
         for (int i = 0, len = s.length(); i < len; i++) {
             char c = s.charAt(i);
-			switch (c) {
-				case '$' -> sb.append("$24");
-				case '.' -> sb.append("$2E");
-				case '[' -> sb.append("$5B");
-				case ';' -> sb.append("$3B");
-				case '(' -> sb.append("$28");
-				case ')' -> sb.append("$29");
-				case '/' -> sb.append("$2F");
-				default -> sb.append(c);
-			}
+            switch (c) {
+                case '$' -> sb.append("$24");
+                case '.' -> sb.append("$2E");
+                case '[' -> sb.append("$5B");
+                case ';' -> sb.append("$3B");
+                case '(' -> sb.append("$28");
+                case ')' -> sb.append("$29");
+                case '/' -> sb.append("$2F");
+                default -> sb.append(c);
+            }
         }
         return sb.toString();
     }

@@ -20,7 +20,7 @@ public interface FieldProvider {
 
     String[] getFieldNames();
 
-    Class[]  getFieldTypes();
+    Class[] getFieldTypes();
 
     void setField(int index, Object value);
 

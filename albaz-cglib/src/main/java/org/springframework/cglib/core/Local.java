@@ -17,8 +17,7 @@ package org.springframework.cglib.core;
 
 import org.springframework.asm.Type;
 
-public class Local
-{
+public class Local {
     private Type type;
     private int index;
 

@@ -36,7 +36,7 @@ public class ClassReaderGenerator implements ClassGenerator {
     }
 
     @Override
-	public void generateClass(ClassVisitor v) {
+    public void generateClass(ClassVisitor v) {
         r.accept(v, attrs, flags);
     }
 }

@@ -10,11 +10,12 @@ repositories {
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    implementation("org.jetbrains:annotations:24.1.0")
     implementation(project(":albaz-util"))
     implementation(project(":albaz-cglib"))
-    api(project(":albaz-jcl"))
+    implementation(project(":albaz-jcl"))
+    implementation("org.apache.logging.log4j:log4j-core:2.24.1")
+    implementation("org.slf4j:slf4j-api")
 }
 
 tasks.test {

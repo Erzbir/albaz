@@ -22,17 +22,16 @@ import java.util.List;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 class NoOpGenerator
-implements CallbackGenerator
-{
+        implements CallbackGenerator {
     public static final NoOpGenerator INSTANCE = new NoOpGenerator();
 
     @Override
-	public void generate(ClassEmitter ce, Context context, List methods) {
-        for (Iterator it = methods.iterator(); it.hasNext();) {
-            MethodInfo method = (MethodInfo)it.next();
+    public void generate(ClassEmitter ce, Context context, List methods) {
+        for (Iterator it = methods.iterator(); it.hasNext(); ) {
+            MethodInfo method = (MethodInfo) it.next();
             if (TypeUtils.isBridge(method.getModifiers()) || (
                     TypeUtils.isProtected(context.getOriginalModifiers(method)) &&
-                    TypeUtils.isPublic(method.getModifiers()))) {
+                            TypeUtils.isPublic(method.getModifiers()))) {
                 CodeEmitter e = EmitUtils.begin_method(ce, method);
                 e.load_this();
                 context.emitLoadArgsAndInvoke(e, method);
@@ -43,5 +42,6 @@ implements CallbackGenerator
     }
 
     @Override
-	public void generateStatic(CodeEmitter e, Context context, List methods) { }
+    public void generateStatic(CodeEmitter e, Context context, List methods) {
+    }
 }

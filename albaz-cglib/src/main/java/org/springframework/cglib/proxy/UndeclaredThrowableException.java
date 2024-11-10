@@ -20,6 +20,7 @@ import org.springframework.cglib.core.CodeGenerationException;
 
 /**
  * Used by {@link Proxy} as a replacement for <code>java.lang.reflect.UndeclaredThrowableException</code>.
+ *
  * @author Juozas Baliuka
  */
 @SuppressWarnings("serial")

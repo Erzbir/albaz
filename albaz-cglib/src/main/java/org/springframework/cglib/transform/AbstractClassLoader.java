@@ -26,13 +26,14 @@ import java.io.IOException;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 abstract public class AbstractClassLoader extends ClassLoader {
+    private static java.security.ProtectionDomain DOMAIN;
+
+    static {
+        DOMAIN = AbstractClassLoader.class.getProtectionDomain();
+    }
+
     private ClassFilter filter;
     private ClassLoader classPath;
-    private static java.security.ProtectionDomain DOMAIN ;
-
-    static{
-        DOMAIN = AbstractClassLoader.class.getProtectionDomain();
-     }
 
     protected AbstractClassLoader(ClassLoader parent, ClassLoader classPath, ClassFilter filter) {
         super(parent);
@@ -41,13 +42,13 @@ abstract public class AbstractClassLoader extends ClassLoader {
     }
 
     @Override
-	public Class loadClass(String name) throws ClassNotFoundException {
+    public Class loadClass(String name) throws ClassNotFoundException {
 
         Class loaded = findLoadedClass(name);
 
-        if( loaded != null ){
-            if( loaded.getClassLoader() == this ){
-               return loaded;
+        if (loaded != null) {
+            if (loaded.getClassLoader() == this) {
+                return loaded;
             }//else reload with this class loader
         }
 
@@ -57,31 +58,31 @@ abstract public class AbstractClassLoader extends ClassLoader {
         ClassReader r;
         try {
 
-           java.io.InputStream is = classPath.getResourceAsStream(
-                       name.replace('.','/') + ".class"
-                  );
+            java.io.InputStream is = classPath.getResourceAsStream(
+                    name.replace('.', '/') + ".class"
+            );
 
-           if (is == null) {
+            if (is == null) {
 
-              throw new ClassNotFoundException(name);
+                throw new ClassNotFoundException(name);
 
-           }
-           try {
+            }
+            try {
 
-              r = new ClassReader(is);
+                r = new ClassReader(is);
 
-           } finally {
+            } finally {
 
-              is.close();
+                is.close();
 
-           }
+            }
         } catch (IOException e) {
             throw new ClassNotFoundException(name + ":" + e.getMessage());
         }
 
         try {
             DebuggingClassWriter w =
-        	    new DebuggingClassWriter(ClassWriter.COMPUTE_FRAMES);
+                    new DebuggingClassWriter(ClassWriter.COMPUTE_FRAMES);
             getGenerator(r).generateClass(w);
             byte[] b = w.toByteArray();
             Class c = super.defineClass(name, b, 0, b.length, DOMAIN);

@@ -55,23 +55,23 @@ public class Signature {
     }
 
     @Override
-	public String toString() {
+    public String toString() {
         return name + desc;
     }
 
     @Override
-	public boolean equals(Object o) {
+    public boolean equals(Object o) {
         if (o == null) {
-			return false;
-		}
+            return false;
+        }
         if (!(o instanceof Signature other)) {
-			return false;
-		}
+            return false;
+        }
         return name.equals(other.name) && desc.equals(other.desc);
     }
 
     @Override
-	public int hashCode() {
+    public int hashCode() {
         return name.hashCode() ^ desc.hashCode();
     }
 }

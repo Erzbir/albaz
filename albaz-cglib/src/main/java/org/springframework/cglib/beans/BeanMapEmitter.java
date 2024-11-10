@@ -28,23 +28,23 @@ import java.util.Map;
 @SuppressWarnings({"rawtypes", "unchecked"})
 class BeanMapEmitter extends ClassEmitter {
     private static final Type BEAN_MAP =
-      TypeUtils.parseType("org.springframework.cglib.beans.BeanMap");
+            TypeUtils.parseType("org.springframework.cglib.beans.BeanMap");
     private static final Type FIXED_KEY_SET =
-      TypeUtils.parseType("org.springframework.cglib.beans.FixedKeySet");
+            TypeUtils.parseType("org.springframework.cglib.beans.FixedKeySet");
     private static final Signature CSTRUCT_OBJECT =
-      TypeUtils.parseConstructor("Object");
+            TypeUtils.parseConstructor("Object");
     private static final Signature CSTRUCT_STRING_ARRAY =
-      TypeUtils.parseConstructor("String[]");
+            TypeUtils.parseConstructor("String[]");
     private static final Signature BEAN_MAP_GET =
-      TypeUtils.parseSignature("Object get(Object, Object)");
+            TypeUtils.parseSignature("Object get(Object, Object)");
     private static final Signature BEAN_MAP_PUT =
-      TypeUtils.parseSignature("Object put(Object, Object, Object)");
+            TypeUtils.parseSignature("Object put(Object, Object, Object)");
     private static final Signature KEY_SET =
-      TypeUtils.parseSignature("java.util.Set keySet()");
+            TypeUtils.parseSignature("java.util.Set keySet()");
     private static final Signature NEW_INSTANCE =
-      new Signature("newInstance", BEAN_MAP, new Type[]{ Constants.TYPE_OBJECT });
+            new Signature("newInstance", BEAN_MAP, new Type[]{Constants.TYPE_OBJECT});
     private static final Signature GET_PROPERTY_TYPE =
-      TypeUtils.parseSignature("Class getPropertyType(String)");
+            TypeUtils.parseSignature("Class getPropertyType(String)");
 
     public BeanMapEmitter(ClassVisitor v, String className, Class type, int require) {
         super(v);
@@ -61,10 +61,10 @@ class BeanMapEmitter extends ClassEmitter {
         allProps.putAll(setters);
 
         if (require != 0) {
-            for (Iterator it = allProps.keySet().iterator(); it.hasNext();) {
-                String name = (String)it.next();
+            for (Iterator it = allProps.keySet().iterator(); it.hasNext(); ) {
+                String name = (String) it.next();
                 if ((((require & BeanMap.REQUIRE_GETTER) != 0) && !getters.containsKey(name)) ||
-                    (((require & BeanMap.REQUIRE_SETTER) != 0) && !setters.containsKey(name))) {
+                        (((require & BeanMap.REQUIRE_SETTER) != 0) && !setters.containsKey(name))) {
                     it.remove();
                     getters.remove(name);
                     setters.remove(name);
@@ -89,7 +89,7 @@ class BeanMapEmitter extends ClassEmitter {
     }
 
     private String[] getNames(Map propertyMap) {
-        return (String[])propertyMap.keySet().toArray(new String[propertyMap.size()]);
+        return (String[]) propertyMap.keySet().toArray(new String[propertyMap.size()]);
     }
 
     private void generateConstructor() {
@@ -109,15 +109,16 @@ class BeanMapEmitter extends ClassEmitter {
         e.checkcast(Constants.TYPE_STRING);
         EmitUtils.string_switch(e, getNames(getters), Constants.SWITCH_STYLE_HASH, new ObjectSwitchCallback() {
             @Override
-			public void processCase(Object key, Label end) {
-                PropertyDescriptor pd = (PropertyDescriptor)getters.get(key);
+            public void processCase(Object key, Label end) {
+                PropertyDescriptor pd = (PropertyDescriptor) getters.get(key);
                 MethodInfo method = ReflectUtils.getMethodInfo(pd.getReadMethod());
                 e.invoke(method);
                 e.box(method.getSignature().getReturnType());
                 e.return_value();
             }
+
             @Override
-			public void processDefault() {
+            public void processDefault() {
                 e.aconst_null();
                 e.return_value();
             }
@@ -133,8 +134,8 @@ class BeanMapEmitter extends ClassEmitter {
         e.checkcast(Constants.TYPE_STRING);
         EmitUtils.string_switch(e, getNames(setters), Constants.SWITCH_STYLE_HASH, new ObjectSwitchCallback() {
             @Override
-			public void processCase(Object key, Label end) {
-                PropertyDescriptor pd = (PropertyDescriptor)setters.get(key);
+            public void processCase(Object key, Label end) {
+                PropertyDescriptor pd = (PropertyDescriptor) setters.get(key);
                 if (pd.getReadMethod() == null) {
                     e.aconst_null();
                 } else {
@@ -150,8 +151,9 @@ class BeanMapEmitter extends ClassEmitter {
                 e.invoke(write);
                 e.return_value();
             }
+
             @Override
-			public void processDefault() {
+            public void processDefault() {
                 // fall-through
             }
         });
@@ -186,13 +188,14 @@ class BeanMapEmitter extends ClassEmitter {
         e.load_arg(0);
         EmitUtils.string_switch(e, allNames, Constants.SWITCH_STYLE_HASH, new ObjectSwitchCallback() {
             @Override
-			public void processCase(Object key, Label end) {
-                PropertyDescriptor pd = (PropertyDescriptor)allProps.get(key);
+            public void processCase(Object key, Label end) {
+                PropertyDescriptor pd = (PropertyDescriptor) allProps.get(key);
                 EmitUtils.load_class(e, Type.getType(pd.getPropertyType()));
                 e.return_value();
             }
+
             @Override
-			public void processDefault() {
+            public void processDefault() {
                 e.aconst_null();
                 e.return_value();
             }

@@ -31,12 +31,12 @@ class MixinBeanEmitter extends MixinEmitter {
     }
 
     @Override
-	protected Class[] getInterfaces(Class[] classes) {
+    protected Class[] getInterfaces(Class[] classes) {
         return null;
     }
 
     @Override
-	protected Method[] getMethods(Class type) {
+    protected Method[] getMethods(Class type) {
         return ReflectUtils.getPropertyMethods(ReflectUtils.getBeanProperties(type), true, true);
     }
 }

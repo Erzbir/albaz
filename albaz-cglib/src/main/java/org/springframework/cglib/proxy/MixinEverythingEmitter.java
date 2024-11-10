@@ -44,13 +44,13 @@ class MixinEverythingEmitter extends MixinEmitter {
         for (Class clazz : classes) {
             ReflectUtils.addAllInterfaces(clazz, list);
         }
-        return (Class[])list.toArray(new Class[list.size()]);
+        return (Class[]) list.toArray(new Class[list.size()]);
     }
 
     @Override
-	protected Method[] getMethods(Class type) {
+    protected Method[] getMethods(Class type) {
         List methods = new ArrayList(Arrays.asList(type.getMethods()));
         CollectionUtils.filter(methods, new RejectModifierPredicate(Modifier.FINAL | Modifier.STATIC));
-        return (Method[])methods.toArray(new Method[methods.size()]);
+        return (Method[]) methods.toArray(new Method[methods.size()]);
     }
 }

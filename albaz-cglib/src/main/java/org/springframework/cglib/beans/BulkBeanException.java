@@ -16,8 +16,7 @@
 package org.springframework.cglib.beans;
 
 @SuppressWarnings({"rawtypes", "unchecked", "serial"})
-public class BulkBeanException extends RuntimeException
-{
+public class BulkBeanException extends RuntimeException {
     private int index;
     private Throwable cause;
 
@@ -37,7 +36,7 @@ public class BulkBeanException extends RuntimeException
     }
 
     @Override
-	public Throwable getCause() {
+    public Throwable getCause() {
         return cause;
     }
 }

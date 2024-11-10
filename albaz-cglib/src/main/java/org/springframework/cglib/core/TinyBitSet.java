@@ -18,6 +18,13 @@ package org.springframework.cglib.core;
 @Deprecated
 public class TinyBitSet {
     private static final int[] T = new int[256];
+
+    static {
+        for (int j = 0; j < 256; j++) {
+            T[j] = gcount(j);
+        }
+    }
+
     private int value = 0;
 
     private static int gcount(int x) {
@@ -27,12 +34,6 @@ public class TinyBitSet {
             x &= (x - 1);
         }
         return c;
-    }
-
-    static {
-        for (int j = 0; j < 256; j++) {
-            T[j] = gcount(j);
-        }
     }
 
     private static int topbit(int i) {

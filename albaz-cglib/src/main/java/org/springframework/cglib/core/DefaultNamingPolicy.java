@@ -42,15 +42,15 @@ public class DefaultNamingPolicy implements NamingPolicy {
             prefix = "$" + prefix;
         }
         String base =
-            prefix + "$$" +
-            source.substring(source.lastIndexOf('.') + 1) +
-            getTag() + "$$" +
-            Integer.toHexString(STRESS_HASH_CODE ? 0 : key.hashCode());
+                prefix + "$$" +
+                        source.substring(source.lastIndexOf('.') + 1) +
+                        getTag() + "$$" +
+                        Integer.toHexString(STRESS_HASH_CODE ? 0 : key.hashCode());
         String attempt = base;
         int index = 2;
         while (names.evaluate(attempt)) {
-			attempt = base + "_" + index++;
-		}
+            attempt = base + "_" + index++;
+        }
         return attempt;
     }
 

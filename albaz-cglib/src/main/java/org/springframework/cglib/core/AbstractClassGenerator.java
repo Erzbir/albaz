@@ -36,356 +36,342 @@ import java.util.WeakHashMap;
 @SuppressWarnings({"rawtypes", "unchecked"})
 abstract public class AbstractClassGenerator<T> implements ClassGenerator {
 
-	private static final ThreadLocal CURRENT = new ThreadLocal();
+    private static final ThreadLocal CURRENT = new ThreadLocal();
+    private static final boolean DEFAULT_USE_CACHE =
+            Boolean.parseBoolean(System.getProperty("cglib.useCache", "true"));
+    private static final boolean inNativeImage;
+    private static volatile Map<ClassLoader, ClassLoaderData> CACHE = new WeakHashMap<>();
 
-	private static volatile Map<ClassLoader, ClassLoaderData> CACHE = new WeakHashMap<>();
-
-	private static final boolean DEFAULT_USE_CACHE =
-			Boolean.parseBoolean(System.getProperty("cglib.useCache", "true"));
-
-	private static final boolean inNativeImage;
-
-	static {
-		String imageCode = System.getProperty("org.graalvm.nativeimage.imagecode");
-		inNativeImage = "buildtime".equals(imageCode) || "runtime".equals(imageCode);
-	}
+    static {
+        String imageCode = System.getProperty("org.graalvm.nativeimage.imagecode");
+        inNativeImage = "buildtime".equals(imageCode) || "runtime".equals(imageCode);
+    }
 
 
-	private GeneratorStrategy strategy = DefaultGeneratorStrategy.INSTANCE;
+    private GeneratorStrategy strategy = DefaultGeneratorStrategy.INSTANCE;
 
-	private NamingPolicy namingPolicy = DefaultNamingPolicy.INSTANCE;
+    private NamingPolicy namingPolicy = DefaultNamingPolicy.INSTANCE;
 
-	private Source source;
+    private Source source;
 
-	private ClassLoader classLoader;
+    private ClassLoader classLoader;
 
-	private Class contextClass;
+    private Class contextClass;
 
-	private String namePrefix;
+    private String namePrefix;
 
-	private Object key;
+    private Object key;
 
-	private boolean useCache = DEFAULT_USE_CACHE;
+    private boolean useCache = DEFAULT_USE_CACHE;
 
-	private String className;
+    private String className;
 
-	private boolean attemptLoad;
-
-
-	protected static class ClassLoaderData {
-
-		private final Set<String> reservedClassNames = new HashSet<>();
-
-		/**
-		 * {@link AbstractClassGenerator} here holds "cache key" (e.g. {@link org.springframework.cglib.proxy.Enhancer}
-		 * configuration), and the value is the generated class plus some additional values
-		 * (see {@link #unwrapCachedValue(Object)}.
-		 * <p>The generated classes can be reused as long as their classloader is reachable.</p>
-		 * <p>Note: the only way to access a class is to find it through generatedClasses cache, thus
-		 * the key should not expire as long as the class itself is alive (its classloader is alive).</p>
-		 */
-		private final LoadingCache<AbstractClassGenerator, Object, Object> generatedClasses;
-
-		/**
-		 * Note: ClassLoaderData object is stored as a value of {@code WeakHashMap<ClassLoader, ...>} thus
-		 * this classLoader reference should be weak otherwise it would make classLoader strongly reachable
-		 * and alive forever.
-		 * Reference queue is not required since the cleanup is handled by {@link WeakHashMap}.
-		 */
-		private final WeakReference<ClassLoader> classLoader;
-
-		private final Predicate uniqueNamePredicate = this.reservedClassNames::contains;
-
-		private static final Function<AbstractClassGenerator, Object> GET_KEY = gen -> gen.key;
-
-		public ClassLoaderData(ClassLoader classLoader) {
-			if (classLoader == null) {
-				throw new IllegalArgumentException("classLoader == null is not yet supported");
-			}
-			this.classLoader = new WeakReference<>(classLoader);
-			Function<AbstractClassGenerator, Object> load = gen -> {
-				Class klass = gen.generate(ClassLoaderData.this);
-				return gen.wrapCachedClass(klass);
-			};
-			generatedClasses = new LoadingCache<>(GET_KEY, load);
-		}
-
-		public ClassLoader getClassLoader() {
-			return classLoader.get();
-		}
-
-		public void reserveName(String name) {
-			reservedClassNames.add(name);
-		}
-
-		public Predicate getUniqueNamePredicate() {
-			return uniqueNamePredicate;
-		}
-
-		public Object get(AbstractClassGenerator gen, boolean useCache) {
-			if (!useCache) {
-				return gen.generate(ClassLoaderData.this);
-			}
-			else {
-				Object cachedValue = generatedClasses.get(gen);
-				return gen.unwrapCachedValue(cachedValue);
-			}
-		}
-	}
+    private boolean attemptLoad;
 
 
-	protected T wrapCachedClass(Class klass) {
-		return (T) new WeakReference(klass);
-	}
+    protected AbstractClassGenerator(Source source) {
+        this.source = source;
+    }
 
-	protected Object unwrapCachedValue(T cached) {
-		return ((WeakReference) cached).get();
-	}
+    /**
+     * Used internally by CGLIB. Returns the <code>AbstractClassGenerator</code>
+     * that is being used to generate a class in the current thread.
+     */
+    public static AbstractClassGenerator getCurrent() {
+        return (AbstractClassGenerator) CURRENT.get();
+    }
 
+    protected T wrapCachedClass(Class klass) {
+        return (T) new WeakReference(klass);
+    }
 
-	protected static class Source {
+    protected Object unwrapCachedValue(T cached) {
+        return ((WeakReference) cached).get();
+    }
 
-		String name;
+    protected void setNamePrefix(String namePrefix) {
+        this.namePrefix = namePrefix;
+    }
 
-		public Source(String name) {
-			this.name = name;
-		}
-	}
+    final protected String getClassName() {
+        return className;
+    }
 
+    private void setClassName(String className) {
+        this.className = className;
+    }
 
-	protected AbstractClassGenerator(Source source) {
-		this.source = source;
-	}
+    private String generateClassName(Predicate nameTestPredicate) {
+        return namingPolicy.getClassName(namePrefix, source.name, key, nameTestPredicate);
+    }
 
-	protected void setNamePrefix(String namePrefix) {
-		this.namePrefix = namePrefix;
-	}
+    // SPRING PATCH BEGIN
+    public void setContextClass(Class contextClass) {
+        this.contextClass = contextClass;
+    }
 
-	final protected String getClassName() {
-		return className;
-	}
+    /**
+     * @see #setNamingPolicy
+     */
+    public NamingPolicy getNamingPolicy() {
+        return namingPolicy;
+    }
 
-	private void setClassName(String className) {
-		this.className = className;
-	}
+    /**
+     * Override the default naming policy.
+     *
+     * @param namingPolicy the custom policy, or null to use the default
+     * @see DefaultNamingPolicy
+     */
+    public void setNamingPolicy(NamingPolicy namingPolicy) {
+        if (namingPolicy == null) {
+            namingPolicy = DefaultNamingPolicy.INSTANCE;
+        }
+        this.namingPolicy = namingPolicy;
+    }
+    // SPRING PATCH END
 
-	private String generateClassName(Predicate nameTestPredicate) {
-		return namingPolicy.getClassName(namePrefix, source.name, key, nameTestPredicate);
-	}
+    /**
+     * @see #setUseCache
+     */
+    public boolean getUseCache() {
+        return useCache;
+    }
 
-	/**
-	 * Set the <code>ClassLoader</code> in which the class will be generated.
-	 * Concrete subclasses of <code>AbstractClassGenerator</code> (such as <code>Enhancer</code>)
-	 * will try to choose an appropriate default if this is unset.
-	 * <p>
-	 * Classes are cached per-<code>ClassLoader</code> using a <code>WeakHashMap</code>, to allow
-	 * the generated classes to be removed when the associated loader is garbage collected.
-	 * @param classLoader the loader to generate the new class with, or null to use the default
-	 */
-	public void setClassLoader(ClassLoader classLoader) {
-		this.classLoader = classLoader;
-	}
+    /**
+     * Whether use and update the static cache of generated classes
+     * for a class with the same properties. Default is <code>true</code>.
+     */
+    public void setUseCache(boolean useCache) {
+        this.useCache = useCache;
+    }
 
-	// SPRING PATCH BEGIN
-	public void setContextClass(Class contextClass) {
-		this.contextClass = contextClass;
-	}
-	// SPRING PATCH END
+    public boolean getAttemptLoad() {
+        return attemptLoad;
+    }
 
-	/**
-	 * Override the default naming policy.
-	 * @param namingPolicy the custom policy, or null to use the default
-	 * @see DefaultNamingPolicy
-	 */
-	public void setNamingPolicy(NamingPolicy namingPolicy) {
-		if (namingPolicy == null) {
-			namingPolicy = DefaultNamingPolicy.INSTANCE;
-		}
-		this.namingPolicy = namingPolicy;
-	}
+    /**
+     * If set, CGLIB will attempt to load classes from the specified
+     * <code>ClassLoader</code> before generating them. Because generated
+     * class names are not guaranteed to be unique, the default is <code>false</code>.
+     */
+    public void setAttemptLoad(boolean attemptLoad) {
+        this.attemptLoad = attemptLoad;
+    }
 
-	/**
-	 * @see #setNamingPolicy
-	 */
-	public NamingPolicy getNamingPolicy() {
-		return namingPolicy;
-	}
+    /**
+     * @see #setStrategy
+     */
+    public GeneratorStrategy getStrategy() {
+        return strategy;
+    }
 
-	/**
-	 * Whether use and update the static cache of generated classes
-	 * for a class with the same properties. Default is <code>true</code>.
-	 */
-	public void setUseCache(boolean useCache) {
-		this.useCache = useCache;
-	}
+    /**
+     * Set the strategy to use to create the bytecode from this generator.
+     * By default an instance of {@link DefaultGeneratorStrategy} is used.
+     */
+    public void setStrategy(GeneratorStrategy strategy) {
+        if (strategy == null) {
+            strategy = DefaultGeneratorStrategy.INSTANCE;
+        }
+        this.strategy = strategy;
+    }
 
-	/**
-	 * @see #setUseCache
-	 */
-	public boolean getUseCache() {
-		return useCache;
-	}
+    public ClassLoader getClassLoader() {
+        ClassLoader t = classLoader;
+        if (t == null) {
+            t = getDefaultClassLoader();
+        }
+        if (t == null) {
+            t = getClass().getClassLoader();
+        }
+        if (t == null) {
+            t = Thread.currentThread().getContextClassLoader();
+        }
+        if (t == null) {
+            throw new IllegalStateException("Cannot determine classloader");
+        }
+        return t;
+    }
 
-	/**
-	 * If set, CGLIB will attempt to load classes from the specified
-	 * <code>ClassLoader</code> before generating them. Because generated
-	 * class names are not guaranteed to be unique, the default is <code>false</code>.
-	 */
-	public void setAttemptLoad(boolean attemptLoad) {
-		this.attemptLoad = attemptLoad;
-	}
+    /**
+     * Set the <code>ClassLoader</code> in which the class will be generated.
+     * Concrete subclasses of <code>AbstractClassGenerator</code> (such as <code>Enhancer</code>)
+     * will try to choose an appropriate default if this is unset.
+     * <p>
+     * Classes are cached per-<code>ClassLoader</code> using a <code>WeakHashMap</code>, to allow
+     * the generated classes to be removed when the associated loader is garbage collected.
+     *
+     * @param classLoader the loader to generate the new class with, or null to use the default
+     */
+    public void setClassLoader(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+    }
 
-	public boolean getAttemptLoad() {
-		return attemptLoad;
-	}
+    abstract protected ClassLoader getDefaultClassLoader();
 
-	/**
-	 * Set the strategy to use to create the bytecode from this generator.
-	 * By default an instance of {@link DefaultGeneratorStrategy} is used.
-	 */
-	public void setStrategy(GeneratorStrategy strategy) {
-		if (strategy == null) {
-			strategy = DefaultGeneratorStrategy.INSTANCE;
-		}
-		this.strategy = strategy;
-	}
+    /**
+     * Returns the protection domain to use when defining the class.
+     * <p>
+     * Default implementation returns <code>null</code> for using a default protection domain. Sub-classes may
+     * override to use a more specific protection domain.
+     * </p>
+     *
+     * @return the protection domain (<code>null</code> for using a default)
+     */
+    protected ProtectionDomain getProtectionDomain() {
+        return null;
+    }
 
-	/**
-	 * @see #setStrategy
-	 */
-	public GeneratorStrategy getStrategy() {
-		return strategy;
-	}
+    protected Object create(Object key) {
+        try {
+            ClassLoader loader = getClassLoader();
+            Map<ClassLoader, ClassLoaderData> cache = CACHE;
+            ClassLoaderData data = cache.get(loader);
+            if (data == null) {
+                synchronized (AbstractClassGenerator.class) {
+                    cache = CACHE;
+                    data = cache.get(loader);
+                    if (data == null) {
+                        Map<ClassLoader, ClassLoaderData> newCache = new WeakHashMap<>(cache);
+                        data = new ClassLoaderData(loader);
+                        newCache.put(loader, data);
+                        CACHE = newCache;
+                    }
+                }
+            }
+            this.key = key;
+            Object obj = data.get(this, getUseCache());
+            if (obj instanceof Class<?> clazz) {
+                return firstInstance(clazz);
+            }
+            return nextInstance(obj);
+        } catch (RuntimeException | Error ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new CodeGenerationException(ex);
+        }
+    }
 
-	/**
-	 * Used internally by CGLIB. Returns the <code>AbstractClassGenerator</code>
-	 * that is being used to generate a class in the current thread.
-	 */
-	public static AbstractClassGenerator getCurrent() {
-		return (AbstractClassGenerator) CURRENT.get();
-	}
+    protected Class generate(ClassLoaderData data) {
+        Class gen;
+        Object save = CURRENT.get();
+        CURRENT.set(this);
+        try {
+            ClassLoader classLoader = data.getClassLoader();
+            if (classLoader == null) {
+                throw new IllegalStateException("ClassLoader is null while trying to define class " +
+                        getClassName() + ". It seems that the loader has been expired from a weak reference somehow. " +
+                        "Please file an issue at cglib's issue tracker.");
+            }
+            synchronized (classLoader) {
+                String name = generateClassName(data.getUniqueNamePredicate());
+                data.reserveName(name);
+                this.setClassName(name);
+            }
+            if (attemptLoad) {
+                try {
+                    // SPRING PATCH BEGIN
+                    synchronized (classLoader) { // just in case
+                        gen = ReflectUtils.loadClass(getClassName(), classLoader);
+                    }
+                    // SPRING PATCH END
+                    return gen;
+                } catch (ClassNotFoundException e) {
+                    // ignore
+                }
+            }
+            // SPRING PATCH BEGIN
+            if (inNativeImage) {
+                throw new UnsupportedOperationException("CGLIB runtime enhancement not supported on native image. " +
+                        "Make sure to include a pre-generated class on the classpath instead: " + getClassName());
+            }
+            // SPRING PATCH END
+            byte[] b = strategy.generate(this);
+            String className = ClassNameReader.getClassName(new ClassReader(b));
+            ProtectionDomain protectionDomain = getProtectionDomain();
+            synchronized (classLoader) { // just in case
+                // SPRING PATCH BEGIN
+                gen = ReflectUtils.defineClass(className, b, classLoader, protectionDomain, contextClass);
+                // SPRING PATCH END
+            }
+            return gen;
+        } catch (RuntimeException | Error ex) {
+            throw ex;
+        } catch (Exception ex) {
+            throw new CodeGenerationException(ex);
+        } finally {
+            CURRENT.set(save);
+        }
+    }
 
-	public ClassLoader getClassLoader() {
-		ClassLoader t = classLoader;
-		if (t == null) {
-			t = getDefaultClassLoader();
-		}
-		if (t == null) {
-			t = getClass().getClassLoader();
-		}
-		if (t == null) {
-			t = Thread.currentThread().getContextClassLoader();
-		}
-		if (t == null) {
-			throw new IllegalStateException("Cannot determine classloader");
-		}
-		return t;
-	}
+    abstract protected Object firstInstance(Class type) throws Exception;
 
-	abstract protected ClassLoader getDefaultClassLoader();
+    abstract protected Object nextInstance(Object instance) throws Exception;
 
-	/**
-	 * Returns the protection domain to use when defining the class.
-	 * <p>
-	 * Default implementation returns <code>null</code> for using a default protection domain. Sub-classes may
-	 * override to use a more specific protection domain.
-	 * </p>
-	 * @return the protection domain (<code>null</code> for using a default)
-	 */
-	protected ProtectionDomain getProtectionDomain() {
-		return null;
-	}
+    protected static class ClassLoaderData {
 
-	protected Object create(Object key) {
-		try {
-			ClassLoader loader = getClassLoader();
-			Map<ClassLoader, ClassLoaderData> cache = CACHE;
-			ClassLoaderData data = cache.get(loader);
-			if (data == null) {
-				synchronized (AbstractClassGenerator.class) {
-					cache = CACHE;
-					data = cache.get(loader);
-					if (data == null) {
-						Map<ClassLoader, ClassLoaderData> newCache = new WeakHashMap<>(cache);
-						data = new ClassLoaderData(loader);
-						newCache.put(loader, data);
-						CACHE = newCache;
-					}
-				}
-			}
-			this.key = key;
-			Object obj = data.get(this, getUseCache());
-			if (obj instanceof Class<?> clazz) {
-				return firstInstance(clazz);
-			}
-			return nextInstance(obj);
-		}
-		catch (RuntimeException | Error ex) {
-			throw ex;
-		}
-		catch (Exception ex) {
-			throw new CodeGenerationException(ex);
-		}
-	}
+        private static final Function<AbstractClassGenerator, Object> GET_KEY = gen -> gen.key;
+        private final Set<String> reservedClassNames = new HashSet<>();
+        /**
+         * {@link AbstractClassGenerator} here holds "cache key" (e.g. {@link org.springframework.cglib.proxy.Enhancer}
+         * configuration), and the value is the generated class plus some additional values
+         * (see {@link #unwrapCachedValue(Object)}.
+         * <p>The generated classes can be reused as long as their classloader is reachable.</p>
+         * <p>Note: the only way to access a class is to find it through generatedClasses cache, thus
+         * the key should not expire as long as the class itself is alive (its classloader is alive).</p>
+         */
+        private final LoadingCache<AbstractClassGenerator, Object, Object> generatedClasses;
+        /**
+         * Note: ClassLoaderData object is stored as a value of {@code WeakHashMap<ClassLoader, ...>} thus
+         * this classLoader reference should be weak otherwise it would make classLoader strongly reachable
+         * and alive forever.
+         * Reference queue is not required since the cleanup is handled by {@link WeakHashMap}.
+         */
+        private final WeakReference<ClassLoader> classLoader;
+        private final Predicate uniqueNamePredicate = this.reservedClassNames::contains;
 
-	protected Class generate(ClassLoaderData data) {
-		Class gen;
-		Object save = CURRENT.get();
-		CURRENT.set(this);
-		try {
-			ClassLoader classLoader = data.getClassLoader();
-			if (classLoader == null) {
-				throw new IllegalStateException("ClassLoader is null while trying to define class " +
-						getClassName() + ". It seems that the loader has been expired from a weak reference somehow. " +
-						"Please file an issue at cglib's issue tracker.");
-			}
-			synchronized (classLoader) {
-				String name = generateClassName(data.getUniqueNamePredicate());
-				data.reserveName(name);
-				this.setClassName(name);
-			}
-			if (attemptLoad) {
-				try {
-					// SPRING PATCH BEGIN
-					synchronized (classLoader) { // just in case
-						gen = ReflectUtils.loadClass(getClassName(), classLoader);
-					}
-					// SPRING PATCH END
-					return gen;
-				}
-				catch (ClassNotFoundException e) {
-					// ignore
-				}
-			}
-			// SPRING PATCH BEGIN
-			if (inNativeImage) {
-				throw new UnsupportedOperationException("CGLIB runtime enhancement not supported on native image. " +
-						"Make sure to include a pre-generated class on the classpath instead: " + getClassName());
-			}
-			// SPRING PATCH END
-			byte[] b = strategy.generate(this);
-			String className = ClassNameReader.getClassName(new ClassReader(b));
-			ProtectionDomain protectionDomain = getProtectionDomain();
-			synchronized (classLoader) { // just in case
-				// SPRING PATCH BEGIN
-				gen = ReflectUtils.defineClass(className, b, classLoader, protectionDomain, contextClass);
-				// SPRING PATCH END
-			}
-			return gen;
-		}
-		catch (RuntimeException | Error ex) {
-			throw ex;
-		}
-		catch (Exception ex) {
-			throw new CodeGenerationException(ex);
-		}
-		finally {
-			CURRENT.set(save);
-		}
-	}
+        public ClassLoaderData(ClassLoader classLoader) {
+            if (classLoader == null) {
+                throw new IllegalArgumentException("classLoader == null is not yet supported");
+            }
+            this.classLoader = new WeakReference<>(classLoader);
+            Function<AbstractClassGenerator, Object> load = gen -> {
+                Class klass = gen.generate(ClassLoaderData.this);
+                return gen.wrapCachedClass(klass);
+            };
+            generatedClasses = new LoadingCache<>(GET_KEY, load);
+        }
 
-	abstract protected Object firstInstance(Class type) throws Exception;
+        public ClassLoader getClassLoader() {
+            return classLoader.get();
+        }
 
-	abstract protected Object nextInstance(Object instance) throws Exception;
+        public void reserveName(String name) {
+            reservedClassNames.add(name);
+        }
+
+        public Predicate getUniqueNamePredicate() {
+            return uniqueNamePredicate;
+        }
+
+        public Object get(AbstractClassGenerator gen, boolean useCache) {
+            if (!useCache) {
+                return gen.generate(ClassLoaderData.this);
+            } else {
+                Object cachedValue = generatedClasses.get(gen);
+                return gen.unwrapCachedValue(cachedValue);
+            }
+        }
+    }
+
+    protected static class Source {
+
+        String name;
+
+        public Source(String name) {
+            this.name = name;
+        }
+    }
 
 }

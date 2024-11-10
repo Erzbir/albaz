@@ -21,27 +21,27 @@ import java.util.*;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class MethodWrapper {
 
-	// SPRING PATCH BEGIN
-    private record MethodWrapperKey(String name, List<String> parameterTypes, String returnType) {
-    }
-	// SPRING PATCH END
-
     private MethodWrapper() {
     }
+    // SPRING PATCH END
 
     public static Object create(Method method) {
-		// SPRING PATCH BEGIN
+        // SPRING PATCH BEGIN
         return new MethodWrapperKey(method.getName(),
-                                       Arrays.asList(ReflectUtils.getNames(method.getParameterTypes())),
-                                       method.getReturnType().getName());
-		// SPRING PATCH END
+                Arrays.asList(ReflectUtils.getNames(method.getParameterTypes())),
+                method.getReturnType().getName());
+        // SPRING PATCH END
     }
 
     public static Set createSet(Collection methods) {
         Set set = new HashSet();
-        for (Iterator it = methods.iterator(); it.hasNext();) {
-            set.add(create((Method)it.next()));
+        for (Iterator it = methods.iterator(); it.hasNext(); ) {
+            set.add(create((Method) it.next()));
         }
         return set;
+    }
+
+    // SPRING PATCH BEGIN
+    private record MethodWrapperKey(String name, List<String> parameterTypes, String returnType) {
     }
 }

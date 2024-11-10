@@ -27,7 +27,7 @@ public class ClassTransformerChain extends AbstractClassTransformer {
     }
 
     @Override
-	public void setTarget(ClassVisitor v) {
+    public void setTarget(ClassVisitor v) {
         super.setTarget(chain[0]);
         ClassVisitor next = v;
         for (int i = chain.length - 1; i >= 0; i--) {
@@ -37,7 +37,7 @@ public class ClassTransformerChain extends AbstractClassTransformer {
     }
 
     @Override
-	public MethodVisitor visitMethod(int access,
+    public MethodVisitor visitMethod(int access,
                                      String name,
                                      String desc,
                                      String signature,
@@ -46,8 +46,8 @@ public class ClassTransformerChain extends AbstractClassTransformer {
     }
 
     @Override
-	public String toString() {
-		StringBuilder sb = new StringBuilder();
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
         sb.append("ClassTransformerChain{");
         for (int i = 0; i < chain.length; i++) {
             if (i > 0) {

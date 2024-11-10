@@ -73,7 +73,8 @@ class BridgeMethodResolver {
                 } finally {
                     is.close();
                 }
-            } catch (IOException ignored) {}
+            } catch (IOException ignored) {
+            }
         }
         return resolved;
     }
@@ -91,22 +92,22 @@ class BridgeMethodResolver {
         }
 
         @Override
-		public void visit(int version, int access, String name,
-                String signature, String superName, String[] interfaces) {
+        public void visit(int version, int access, String name,
+                          String signature, String superName, String[] interfaces) {
         }
 
         @Override
-		public MethodVisitor visitMethod(int access, String name, String desc,
-                String signature, String[] exceptions) {
+        public MethodVisitor visitMethod(int access, String name, String desc,
+                                         String signature, String[] exceptions) {
             Signature sig = new Signature(name, desc);
             if (eligibleMethods.remove(sig)) {
                 currentMethod = sig;
                 return new MethodVisitor(Constants.ASM_API) {
                     @Override
-					public void visitMethodInsn(
+                    public void visitMethodInsn(
                             int opcode, String owner, String name, String desc, boolean itf) {
                         if ((opcode == Opcodes.INVOKESPECIAL
-                                        || (itf && opcode == Opcodes.INVOKEINTERFACE))
+                                || (itf && opcode == Opcodes.INVOKEINTERFACE))
                                 && currentMethod != null) {
                             Signature target = new Signature(name, desc);
                             // If the target signature is the same as the current,

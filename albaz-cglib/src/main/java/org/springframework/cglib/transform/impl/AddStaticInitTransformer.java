@@ -34,14 +34,14 @@ public class AddStaticInitTransformer extends ClassEmitterTransformer {
         }
         Type[] types = info.getSignature().getArgumentTypes();
         if (types.length != 1 ||
-            !types[0].equals(Constants.TYPE_CLASS) ||
-            !info.getSignature().getReturnType().equals(Type.VOID_TYPE)) {
+                !types[0].equals(Constants.TYPE_CLASS) ||
+                !info.getSignature().getReturnType().equals(Type.VOID_TYPE)) {
             throw new IllegalArgumentException(classInit + " illegal signature");
         }
     }
 
     @Override
-	protected void init() {
+    protected void init() {
         if (!TypeUtils.isInterface(getAccess())) {
             CodeEmitter e = getStaticHook();
             EmitUtils.load_class_this(e);

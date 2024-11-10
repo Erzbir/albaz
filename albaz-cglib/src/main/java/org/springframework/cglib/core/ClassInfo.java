@@ -24,20 +24,23 @@ abstract public class ClassInfo {
     }
 
     abstract public Type getType();
+
     abstract public Type getSuperType();
+
     abstract public Type[] getInterfaces();
+
     abstract public int getModifiers();
 
-	@Override
-	public boolean equals(Object o) {
-		if (o == null) {
-			return false;
-		}
-		if (!(o instanceof ClassInfo classInfo)) {
-			return false;
-		}
-		return getType().equals(classInfo.getType());
-	}
+    @Override
+    public boolean equals(Object o) {
+        if (o == null) {
+            return false;
+        }
+        if (!(o instanceof ClassInfo classInfo)) {
+            return false;
+        }
+        return getType().equals(classInfo.getType());
+    }
 
     @Override
     public int hashCode() {

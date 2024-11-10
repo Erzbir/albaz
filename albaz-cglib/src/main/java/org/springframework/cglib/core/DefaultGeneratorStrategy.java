@@ -21,21 +21,21 @@ public class DefaultGeneratorStrategy implements GeneratorStrategy {
     public static final DefaultGeneratorStrategy INSTANCE = new DefaultGeneratorStrategy();
 
     @Override
-	public byte[] generate(ClassGenerator cg) throws Exception {
+    public byte[] generate(ClassGenerator cg) throws Exception {
         DebuggingClassWriter cw = getClassVisitor();
         transform(cg).generateClass(cw);
         return transform(cw.toByteArray());
     }
 
     protected DebuggingClassWriter getClassVisitor() throws Exception {
-      return new DebuggingClassWriter(ClassWriter.COMPUTE_FRAMES);
+        return new DebuggingClassWriter(ClassWriter.COMPUTE_FRAMES);
     }
 
     protected final ClassWriter getClassWriter() {
-	// Cause compile / runtime errors for people who implemented the old
-	// interface without using @Override
-	throw new UnsupportedOperationException("You are calling " +
-		"getClassWriter, which no longer exists in this cglib version.");
+        // Cause compile / runtime errors for people who implemented the old
+        // interface without using @Override
+        throw new UnsupportedOperationException("You are calling " +
+                "getClassWriter, which no longer exists in this cglib version.");
     }
 
     protected byte[] transform(byte[] b) throws Exception {

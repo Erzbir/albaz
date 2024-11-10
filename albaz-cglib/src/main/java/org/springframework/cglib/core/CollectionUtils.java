@@ -24,13 +24,14 @@ import java.util.*;
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class CollectionUtils {
-    private CollectionUtils() { }
+    private CollectionUtils() {
+    }
 
     public static Map bucket(Collection c, Transformer t) {
         Map buckets = new HashMap();
         for (Object value : c) {
             Object key = t.transform(value);
-            List bucket = (List)buckets.get(key);
+            List bucket = (List) buckets.get(key);
             if (bucket == null) {
                 buckets.put(key, bucket = new LinkedList());
             }
@@ -52,7 +53,7 @@ public class CollectionUtils {
 
     public static List transform(Collection c, Transformer t) {
         List result = new ArrayList(c.size());
-        for (Iterator it = c.iterator(); it.hasNext();) {
+        for (Iterator it = c.iterator(); it.hasNext(); ) {
             result.add(t.transform(it.next()));
         }
         return result;
@@ -61,7 +62,7 @@ public class CollectionUtils {
     public static Map getIndexMap(List list) {
         Map indexes = new HashMap();
         int index = 0;
-        for (Iterator it = list.iterator(); it.hasNext();) {
+        for (Iterator it = list.iterator(); it.hasNext(); ) {
             indexes.put(it.next(), index++);
         }
         return indexes;

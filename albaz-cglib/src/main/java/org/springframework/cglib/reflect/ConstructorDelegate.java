@@ -30,11 +30,7 @@ import java.security.ProtectionDomain;
 @SuppressWarnings({"rawtypes", "unchecked"})
 abstract public class ConstructorDelegate {
     private static final ConstructorKey KEY_FACTORY =
-      (ConstructorKey)KeyFactory.create(ConstructorKey.class, KeyFactory.CLASS_BY_NAME);
-
-    interface ConstructorKey {
-        public Object newInstance(String declaring, String iface);
-    }
+            (ConstructorKey) KeyFactory.create(ConstructorKey.class, KeyFactory.CLASS_BY_NAME);
 
     protected ConstructorDelegate() {
     }
@@ -46,10 +42,14 @@ abstract public class ConstructorDelegate {
         return gen.create();
     }
 
+    interface ConstructorKey {
+        public Object newInstance(String declaring, String iface);
+    }
+
     public static class Generator extends AbstractClassGenerator {
         private static final Source SOURCE = new Source(ConstructorDelegate.class.getName());
         private static final Type CONSTRUCTOR_DELEGATE =
-          TypeUtils.parseType("org.springframework.cglib.reflect.ConstructorDelegate");
+                TypeUtils.parseType("org.springframework.cglib.reflect.ConstructorDelegate");
 
         private Class iface;
         private Class targetClass;
@@ -69,21 +69,21 @@ abstract public class ConstructorDelegate {
         public ConstructorDelegate create() {
             setNamePrefix(targetClass.getName());
             Object key = KEY_FACTORY.newInstance(iface.getName(), targetClass.getName());
-            return (ConstructorDelegate)super.create(key);
+            return (ConstructorDelegate) super.create(key);
         }
 
         @Override
-		protected ClassLoader getDefaultClassLoader() {
+        protected ClassLoader getDefaultClassLoader() {
             return targetClass.getClassLoader();
         }
 
         @Override
-		protected ProtectionDomain getProtectionDomain() {
-        	return ReflectUtils.getProtectionDomain(targetClass);
+        protected ProtectionDomain getProtectionDomain() {
+            return ReflectUtils.getProtectionDomain(targetClass);
         }
 
         @Override
-		public void generateClass(ClassVisitor v) {
+        public void generateClass(ClassVisitor v) {
             setNamePrefix(targetClass.getName());
 
             final Method newInstance = ReflectUtils.findNewInstance(iface);
@@ -99,16 +99,16 @@ abstract public class ConstructorDelegate {
 
             ClassEmitter ce = new ClassEmitter(v);
             ce.begin_class(Constants.V1_8,
-                           Constants.ACC_PUBLIC,
-                           getClassName(),
-                           CONSTRUCTOR_DELEGATE,
-                           new Type[]{ Type.getType(iface) },
-                           Constants.SOURCE_FILE);
+                    Constants.ACC_PUBLIC,
+                    getClassName(),
+                    CONSTRUCTOR_DELEGATE,
+                    new Type[]{Type.getType(iface)},
+                    Constants.SOURCE_FILE);
             Type declaring = Type.getType(constructor.getDeclaringClass());
             EmitUtils.null_constructor(ce);
             CodeEmitter e = ce.begin_method(Constants.ACC_PUBLIC,
-                                            ReflectUtils.getSignature(newInstance),
-                                            ReflectUtils.getExceptionTypes(newInstance));
+                    ReflectUtils.getSignature(newInstance),
+                    ReflectUtils.getExceptionTypes(newInstance));
             e.new_instance(declaring);
             e.dup();
             e.load_args();
@@ -119,12 +119,12 @@ abstract public class ConstructorDelegate {
         }
 
         @Override
-		protected Object firstInstance(Class type) {
+        protected Object firstInstance(Class type) {
             return ReflectUtils.newInstance(type);
         }
 
         @Override
-		protected Object nextInstance(Object instance) {
+        protected Object nextInstance(Object instance) {
             return instance;
         }
     }

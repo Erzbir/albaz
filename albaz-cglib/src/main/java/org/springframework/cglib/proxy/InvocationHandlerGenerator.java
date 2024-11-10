@@ -23,23 +23,22 @@ import java.util.List;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 class InvocationHandlerGenerator
-implements CallbackGenerator
-{
+        implements CallbackGenerator {
     public static final InvocationHandlerGenerator INSTANCE = new InvocationHandlerGenerator();
 
     private static final Type INVOCATION_HANDLER =
-      TypeUtils.parseType("org.springframework.cglib.proxy.InvocationHandler");
+            TypeUtils.parseType("org.springframework.cglib.proxy.InvocationHandler");
     private static final Type UNDECLARED_THROWABLE_EXCEPTION =
-      TypeUtils.parseType("org.springframework.cglib.proxy.UndeclaredThrowableException");
+            TypeUtils.parseType("org.springframework.cglib.proxy.UndeclaredThrowableException");
     private static final Type METHOD =
-      TypeUtils.parseType("java.lang.reflect.Method");
+            TypeUtils.parseType("java.lang.reflect.Method");
     private static final Signature INVOKE =
-      TypeUtils.parseSignature("Object invoke(Object, java.lang.reflect.Method, Object[])");
+            TypeUtils.parseSignature("Object invoke(Object, java.lang.reflect.Method, Object[])");
 
     @Override
-	public void generate(ClassEmitter ce, Context context, List methods) {
-        for (Iterator it = methods.iterator(); it.hasNext();) {
-            MethodInfo method = (MethodInfo)it.next();
+    public void generate(ClassEmitter ce, Context context, List methods) {
+        for (Iterator it = methods.iterator(); it.hasNext(); ) {
+            MethodInfo method = (MethodInfo) it.next();
             Signature impl = context.getImplSignature(method);
             ce.declare_field(Constants.PRIVATE_FINAL_STATIC, impl.getName(), METHOD, null);
 
@@ -59,9 +58,9 @@ implements CallbackGenerator
     }
 
     @Override
-	public void generateStatic(CodeEmitter e, Context context, List methods) {
-        for (Iterator it = methods.iterator(); it.hasNext();) {
-            MethodInfo method = (MethodInfo)it.next();
+    public void generateStatic(CodeEmitter e, Context context, List methods) {
+        for (Iterator it = methods.iterator(); it.hasNext(); ) {
+            MethodInfo method = (MethodInfo) it.next();
             EmitUtils.load_method(e, method);
             e.putfield(context.getImplSignature(method).getName());
         }

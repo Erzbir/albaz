@@ -27,23 +27,6 @@ import java.util.Arrays;
  */
 @SuppressWarnings("fallthrough")
 public class CodeEmitter extends LocalVariablesSorter {
-    private static final Signature BOOLEAN_VALUE =
-      TypeUtils.parseSignature("boolean booleanValue()");
-    private static final Signature CHAR_VALUE =
-      TypeUtils.parseSignature("char charValue()");
-    private static final Signature LONG_VALUE =
-      TypeUtils.parseSignature("long longValue()");
-    private static final Signature DOUBLE_VALUE =
-      TypeUtils.parseSignature("double doubleValue()");
-    private static final Signature FLOAT_VALUE =
-      TypeUtils.parseSignature("float floatValue()");
-    private static final Signature INT_VALUE =
-      TypeUtils.parseSignature("int intValue()");
-    private static final Signature CSTRUCT_NULL =
-      TypeUtils.parseConstructor("");
-    private static final Signature CSTRUCT_STRING =
-      TypeUtils.parseConstructor("String");
-
     public static final int ADD = Constants.IADD;
     public static final int MUL = Constants.IMUL;
     public static final int XOR = Constants.IXOR;
@@ -54,57 +37,30 @@ public class CodeEmitter extends LocalVariablesSorter {
     public static final int REM = Constants.IREM;
     public static final int AND = Constants.IAND;
     public static final int OR = Constants.IOR;
-
     public static final int GT = Constants.IFGT;
     public static final int LT = Constants.IFLT;
     public static final int GE = Constants.IFGE;
     public static final int LE = Constants.IFLE;
     public static final int NE = Constants.IFNE;
     public static final int EQ = Constants.IFEQ;
-
+    private static final Signature BOOLEAN_VALUE =
+            TypeUtils.parseSignature("boolean booleanValue()");
+    private static final Signature CHAR_VALUE =
+            TypeUtils.parseSignature("char charValue()");
+    private static final Signature LONG_VALUE =
+            TypeUtils.parseSignature("long longValue()");
+    private static final Signature DOUBLE_VALUE =
+            TypeUtils.parseSignature("double doubleValue()");
+    private static final Signature FLOAT_VALUE =
+            TypeUtils.parseSignature("float floatValue()");
+    private static final Signature INT_VALUE =
+            TypeUtils.parseSignature("int intValue()");
+    private static final Signature CSTRUCT_NULL =
+            TypeUtils.parseConstructor("");
+    private static final Signature CSTRUCT_STRING =
+            TypeUtils.parseConstructor("String");
     private ClassEmitter ce;
     private State state;
-
-    private static class State
-    extends MethodInfo
-    {
-        ClassInfo classInfo;
-        int access;
-        Signature sig;
-        Type[] argumentTypes;
-        int localOffset;
-        Type[] exceptionTypes;
-
-        State(ClassInfo classInfo, int access, Signature sig, Type[] exceptionTypes) {
-            this.classInfo = classInfo;
-            this.access = access;
-            this.sig = sig;
-            this.exceptionTypes = exceptionTypes;
-            localOffset = TypeUtils.isStatic(access) ? 0 : 1;
-            argumentTypes = sig.getArgumentTypes();
-        }
-
-        @Override
-        public ClassInfo getClassInfo() {
-            return classInfo;
-        }
-
-        @Override
-        public int getModifiers() {
-            return access;
-        }
-
-        @Override
-        public Signature getSignature() {
-            return sig;
-        }
-
-        @Override
-        public Type[] getExceptionTypes() {
-            return exceptionTypes;
-        }
-
-    }
 
     CodeEmitter(ClassEmitter ce, MethodVisitor mv, int access, Signature sig, Type[] exceptionTypes) {
         super(access, sig.getDescriptor(), mv);
@@ -116,6 +72,15 @@ public class CodeEmitter extends LocalVariablesSorter {
         super(wrap);
         this.ce = wrap.ce;
         this.state = wrap.state;
+    }
+
+    private static boolean isSorted(int[] keys) {
+        for (int i = 1; i < keys.length; i++) {
+            if (keys[i] < keys[i - 1]) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public boolean isStaticHook() {
@@ -151,14 +116,22 @@ public class CodeEmitter extends LocalVariablesSorter {
             throw new IllegalStateException("end of block is unset");
         }
         mv.visitTryCatchBlock(block.getStart(),
-                              block.getEnd(),
-                              mark(),
-                              exception.getInternalName());
+                block.getEnd(),
+                mark(),
+                exception.getInternalName());
     }
 
-    public void goTo(Label label) { mv.visitJumpInsn(Constants.GOTO, label); }
-    public void ifnull(Label label) { mv.visitJumpInsn(Constants.IFNULL, label); }
-    public void ifnonnull(Label label) { mv.visitJumpInsn(Constants.IFNONNULL, label); }
+    public void goTo(Label label) {
+        mv.visitJumpInsn(Constants.GOTO, label);
+    }
+
+    public void ifnull(Label label) {
+        mv.visitJumpInsn(Constants.IFNULL, label);
+    }
+
+    public void ifnonnull(Label label) {
+        mv.visitJumpInsn(Constants.IFNONNULL, label);
+    }
 
     public void if_jump(int mode, Label label) {
         mv.visitJumpInsn(mode, label);
@@ -172,55 +145,98 @@ public class CodeEmitter extends LocalVariablesSorter {
         int intOp = -1;
         int jumpmode = mode;
         switch (mode) {
-        case GE: jumpmode = LT; break;
-        case LE: jumpmode = GT; break;
+            case GE:
+                jumpmode = LT;
+                break;
+            case LE:
+                jumpmode = GT;
+                break;
         }
         switch (type.getSort()) {
-        case Type.LONG:
-            mv.visitInsn(Constants.LCMP);
-            break;
-        case Type.DOUBLE:
-            mv.visitInsn(Constants.DCMPG);
-            break;
-        case Type.FLOAT:
-            mv.visitInsn(Constants.FCMPG);
-            break;
-        case Type.ARRAY:
-        case Type.OBJECT:
-            switch (mode) {
-            case EQ:
-                mv.visitJumpInsn(Constants.IF_ACMPEQ, label);
+            case Type.LONG:
+                mv.visitInsn(Constants.LCMP);
+                break;
+            case Type.DOUBLE:
+                mv.visitInsn(Constants.DCMPG);
+                break;
+            case Type.FLOAT:
+                mv.visitInsn(Constants.FCMPG);
+                break;
+            case Type.ARRAY:
+            case Type.OBJECT:
+                switch (mode) {
+                    case EQ:
+                        mv.visitJumpInsn(Constants.IF_ACMPEQ, label);
+                        return;
+                    case NE:
+                        mv.visitJumpInsn(Constants.IF_ACMPNE, label);
+                        return;
+                }
+                throw new IllegalArgumentException("Bad comparison for type " + type);
+            default:
+                switch (mode) {
+                    case EQ:
+                        intOp = Constants.IF_ICMPEQ;
+                        break;
+                    case NE:
+                        intOp = Constants.IF_ICMPNE;
+                        break;
+                    case GE:
+                        swap(); /* fall through */
+                    case LT:
+                        intOp = Constants.IF_ICMPLT;
+                        break;
+                    case LE:
+                        swap(); /* fall through */
+                    case GT:
+                        intOp = Constants.IF_ICMPGT;
+                        break;
+                }
+                mv.visitJumpInsn(intOp, label);
                 return;
-            case NE:
-                mv.visitJumpInsn(Constants.IF_ACMPNE, label);
-                return;
-            }
-            throw new IllegalArgumentException("Bad comparison for type " + type);
-        default:
-            switch (mode) {
-            case EQ: intOp = Constants.IF_ICMPEQ; break;
-            case NE: intOp = Constants.IF_ICMPNE; break;
-            case GE: swap(); /* fall through */
-            case LT: intOp = Constants.IF_ICMPLT; break;
-            case LE: swap(); /* fall through */
-            case GT: intOp = Constants.IF_ICMPGT; break;
-            }
-            mv.visitJumpInsn(intOp, label);
-            return;
         }
         if_jump(jumpmode, label);
     }
 
-    public void pop() { mv.visitInsn(Constants.POP); }
-    public void pop2() { mv.visitInsn(Constants.POP2); }
-    public void dup() { mv.visitInsn(Constants.DUP); }
-    public void dup2() { mv.visitInsn(Constants.DUP2); }
-    public void dup_x1() { mv.visitInsn(Constants.DUP_X1); }
-    public void dup_x2() { mv.visitInsn(Constants.DUP_X2); }
-    public void dup2_x1() { mv.visitInsn(Constants.DUP2_X1); }
-    public void dup2_x2() { mv.visitInsn(Constants.DUP2_X2); }
-    public void swap() { mv.visitInsn(Constants.SWAP); }
-    public void aconst_null() { mv.visitInsn(Constants.ACONST_NULL); }
+    public void pop() {
+        mv.visitInsn(Constants.POP);
+    }
+
+    public void pop2() {
+        mv.visitInsn(Constants.POP2);
+    }
+
+    public void dup() {
+        mv.visitInsn(Constants.DUP);
+    }
+
+    public void dup2() {
+        mv.visitInsn(Constants.DUP2);
+    }
+
+    public void dup_x1() {
+        mv.visitInsn(Constants.DUP_X1);
+    }
+
+    public void dup_x2() {
+        mv.visitInsn(Constants.DUP_X2);
+    }
+
+    public void dup2_x1() {
+        mv.visitInsn(Constants.DUP2_X1);
+    }
+
+    public void dup2_x2() {
+        mv.visitInsn(Constants.DUP2_X2);
+    }
+
+    public void swap() {
+        mv.visitInsn(Constants.SWAP);
+    }
+
+    public void aconst_null() {
+        mv.visitInsn(Constants.ACONST_NULL);
+    }
 
     public void swap(Type prev, Type type) {
         if (type.getSize() == 1) {
@@ -241,13 +257,25 @@ public class CodeEmitter extends LocalVariablesSorter {
         }
     }
 
-    public void monitorenter() { mv.visitInsn(Constants.MONITORENTER); }
-    public void monitorexit() { mv.visitInsn(Constants.MONITOREXIT); }
+    public void monitorenter() {
+        mv.visitInsn(Constants.MONITORENTER);
+    }
 
-    public void math(int op, Type type) { mv.visitInsn(type.getOpcode(op)); }
+    public void monitorexit() {
+        mv.visitInsn(Constants.MONITOREXIT);
+    }
 
-    public void array_load(Type type) { mv.visitInsn(type.getOpcode(Constants.IALOAD)); }
-    public void array_store(Type type) { mv.visitInsn(type.getOpcode(Constants.IASTORE)); }
+    public void math(int op, Type type) {
+        mv.visitInsn(type.getOpcode(op));
+    }
+
+    public void array_load(Type type) {
+        mv.visitInsn(type.getOpcode(Constants.IALOAD));
+    }
+
+    public void array_store(Type type) {
+        mv.visitInsn(type.getOpcode(Constants.IASTORE));
+    }
 
     /**
      * Casts from one primitive numeric type to another
@@ -328,6 +356,7 @@ public class CodeEmitter extends LocalVariablesSorter {
             mv.visitLdcInsn(value);
         }
     }
+
     public void push(double value) {
         if (value == 0d || value == 1d) {
             mv.visitInsn(TypeUtils.DCONST(value));
@@ -372,11 +401,12 @@ public class CodeEmitter extends LocalVariablesSorter {
 
     /**
      * Pushes the specified argument of the current method onto the stack.
+     *
      * @param index the zero-based index into the argument list
      */
     public void load_arg(int index) {
         load_local(state.argumentTypes[index],
-                   state.localOffset + skipArgs(index));
+                state.localOffset + skipArgs(index));
     }
 
     // zero-based (see load_this)
@@ -470,9 +500,9 @@ public class CodeEmitter extends LocalVariablesSorter {
     // package-protected for EmitUtils, try to fix
     void emit_field(int opcode, Type ctype, String name, Type ftype) {
         mv.visitFieldInsn(opcode,
-                          ctype.getInternalName(),
-                          name,
-                          ftype.getDescriptor());
+                ctype.getInternalName(),
+                name,
+                ftype.getDescriptor());
     }
 
     public void super_invoke() {
@@ -497,15 +527,15 @@ public class CodeEmitter extends LocalVariablesSorter {
 
     private void emit_invoke(int opcode, Type type, Signature sig, boolean isInterface) {
         if (sig.getName().equals(Constants.CONSTRUCTOR_NAME) &&
-            ((opcode == Constants.INVOKEVIRTUAL) ||
-             (opcode == Constants.INVOKESTATIC))) {
+                ((opcode == Constants.INVOKEVIRTUAL) ||
+                        (opcode == Constants.INVOKESTATIC))) {
             // TODO: error
         }
         mv.visitMethodInsn(opcode,
-                           type.getInternalName(),
-                           sig.getName(),
-                           sig.getDescriptor(),
-                           isInterface);
+                type.getInternalName(),
+                sig.getName(),
+                sig.getDescriptor(),
+                isInterface);
     }
 
     public void invoke_interface(Type owner, Signature sig) {
@@ -568,9 +598,17 @@ public class CodeEmitter extends LocalVariablesSorter {
         aaload();
     }
 
-    public void aaload() { mv.visitInsn(Constants.AALOAD); }
-    public void aastore() { mv.visitInsn(Constants.AASTORE); }
-    public void athrow() { mv.visitInsn(Constants.ATHROW); }
+    public void aaload() {
+        mv.visitInsn(Constants.AALOAD);
+    }
+
+    public void aastore() {
+        mv.visitInsn(Constants.AASTORE);
+    }
+
+    public void athrow() {
+        mv.visitInsn(Constants.ATHROW);
+    }
 
     public Label make_label() {
         return new Label();
@@ -607,15 +645,15 @@ public class CodeEmitter extends LocalVariablesSorter {
         if (keys.length == 0) {
             density = 0;
         } else {
-            density = (float)keys.length / (keys[keys.length - 1] - keys[0] + 1);
+            density = (float) keys.length / (keys[keys.length - 1] - keys[0] + 1);
         }
         process_switch(keys, callback, density >= 0.5f);
     }
 
     public void process_switch(int[] keys, ProcessSwitchCallback callback, boolean useTable) {
         if (!isSorted(keys)) {
-			throw new IllegalArgumentException("keys to switch must be sorted ascending");
-		}
+            throw new IllegalArgumentException("keys to switch must be sorted ascending");
+        }
         Label def = make_label();
         Label end = make_label();
 
@@ -664,15 +702,6 @@ public class CodeEmitter extends LocalVariablesSorter {
         }
     }
 
-    private static boolean isSorted(int[] keys) {
-        for (int i = 1; i < keys.length; i++) {
-            if (keys[i] < keys[i - 1]) {
-				return false;
-			}
-        }
-        return true;
-    }
-
     public void mark(Label label) {
         mv.visitLabel(label);
     }
@@ -708,6 +737,7 @@ public class CodeEmitter extends LocalVariablesSorter {
      * on the top of the stack with the wrapped (Object) equivalent. For
      * example, char -> Character.
      * If the class is Void, a null is pushed onto the stack instead.
+     *
      * @param type the class indicating the current type of the top stack value
      */
     public void box(Type type) {
@@ -727,7 +757,7 @@ public class CodeEmitter extends LocalVariablesSorter {
                     dup_x1();
                     swap();
                 }
-                invoke_constructor(boxed, new Signature(Constants.CONSTRUCTOR_NAME, Type.VOID_TYPE, new Type[]{ type }));
+                invoke_constructor(boxed, new Signature(Constants.CONSTRUCTOR_NAME, Type.VOID_TYPE, new Type[]{type}));
             }
         }
     }
@@ -736,35 +766,36 @@ public class CodeEmitter extends LocalVariablesSorter {
      * If the argument is a primitive class, replaces the object
      * on the top of the stack with the unwrapped (primitive)
      * equivalent. For example, Character -> char.
+     *
      * @param type the class indicating the desired type of the top stack value
      */
     public void unbox(Type type) {
         Type t = Constants.TYPE_NUMBER;
         Signature sig = null;
         switch (type.getSort()) {
-        case Type.VOID:
-            return;
-        case Type.CHAR:
-            t = Constants.TYPE_CHARACTER;
-            sig = CHAR_VALUE;
-            break;
-        case Type.BOOLEAN:
-            t = Constants.TYPE_BOOLEAN;
-            sig = BOOLEAN_VALUE;
-            break;
-        case Type.DOUBLE:
-            sig = DOUBLE_VALUE;
-            break;
-        case Type.FLOAT:
-            sig = FLOAT_VALUE;
-            break;
-        case Type.LONG:
-            sig = LONG_VALUE;
-            break;
-        case Type.INT:
-        case Type.SHORT:
-        case Type.BYTE:
-            sig = INT_VALUE;
+            case Type.VOID:
+                return;
+            case Type.CHAR:
+                t = Constants.TYPE_CHARACTER;
+                sig = CHAR_VALUE;
+                break;
+            case Type.BOOLEAN:
+                t = Constants.TYPE_BOOLEAN;
+                sig = BOOLEAN_VALUE;
+                break;
+            case Type.DOUBLE:
+                sig = DOUBLE_VALUE;
+                break;
+            case Type.FLOAT:
+                sig = FLOAT_VALUE;
+                break;
+            case Type.LONG:
+                sig = LONG_VALUE;
+                break;
+            case Type.INT:
+            case Type.SHORT:
+            case Type.BYTE:
+                sig = INT_VALUE;
         }
 
         if (sig == null) {
@@ -796,26 +827,25 @@ public class CodeEmitter extends LocalVariablesSorter {
         }
     }
 
-
     /**
      * Pushes a zero onto the stack if the argument is a primitive class, or a null otherwise.
      */
     public void zero_or_null(Type type) {
         if (TypeUtils.isPrimitive(type)) {
             switch (type.getSort()) {
-            case Type.DOUBLE:
-                push(0d);
-                break;
-            case Type.LONG:
-                push(0L);
-                break;
-            case Type.FLOAT:
-                push(0f);
-                break;
-            case Type.VOID:
-                aconst_null();
-            default:
-                push(0);
+                case Type.DOUBLE:
+                    push(0d);
+                    break;
+                case Type.LONG:
+                    push(0L);
+                    break;
+                case Type.FLOAT:
+                    push(0f);
+                    break;
+                case Type.VOID:
+                    aconst_null();
+                default:
+                    push(0);
             }
         } else {
             aconst_null();
@@ -869,5 +899,45 @@ public class CodeEmitter extends LocalVariablesSorter {
 
     public void invoke(MethodInfo method) {
         invoke(method, method.getClassInfo().getType());
+    }
+
+    private static class State
+            extends MethodInfo {
+        ClassInfo classInfo;
+        int access;
+        Signature sig;
+        Type[] argumentTypes;
+        int localOffset;
+        Type[] exceptionTypes;
+
+        State(ClassInfo classInfo, int access, Signature sig, Type[] exceptionTypes) {
+            this.classInfo = classInfo;
+            this.access = access;
+            this.sig = sig;
+            this.exceptionTypes = exceptionTypes;
+            localOffset = TypeUtils.isStatic(access) ? 0 : 1;
+            argumentTypes = sig.getArgumentTypes();
+        }
+
+        @Override
+        public ClassInfo getClassInfo() {
+            return classInfo;
+        }
+
+        @Override
+        public int getModifiers() {
+            return access;
+        }
+
+        @Override
+        public Signature getSignature() {
+            return sig;
+        }
+
+        @Override
+        public Type[] getExceptionTypes() {
+            return exceptionTypes;
+        }
+
     }
 }

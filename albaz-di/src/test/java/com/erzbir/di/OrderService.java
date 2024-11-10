@@ -1,7 +1,7 @@
 package com.erzbir.di;
 
 
-import com.erzbir.di.beans.annotation.Component;
+import com.erzbir.albaz.di.beans.annotation.Component;
 
 /**
  * @author mafei007

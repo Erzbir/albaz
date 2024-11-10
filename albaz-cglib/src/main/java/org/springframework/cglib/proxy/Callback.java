@@ -17,6 +17,7 @@ package org.springframework.cglib.proxy;
 
 /**
  * All callback interfaces used by {@link Enhancer} extend this interface.
+ *
  * @see MethodInterceptor
  * @see NoOp
  * @see LazyLoader
@@ -24,6 +25,5 @@ package org.springframework.cglib.proxy;
  * @see InvocationHandler
  * @see FixedValue
  */
-public interface Callback
-{
+public interface Callback {
 }

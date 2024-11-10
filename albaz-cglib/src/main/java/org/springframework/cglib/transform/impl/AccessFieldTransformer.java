@@ -30,10 +30,6 @@ public class AccessFieldTransformer extends ClassEmitterTransformer {
         this.callback = callback;
     }
 
-    public interface Callback {
-        String getPropertyName(Type owner, String fieldName);
-    }
-
     @Override
     public void declare_field(int access, final String name, Type type, Object value) {
         super.declare_field(access, name, type, value);
@@ -42,25 +38,29 @@ public class AccessFieldTransformer extends ClassEmitterTransformer {
         if (property != null) {
             CodeEmitter e;
             e = begin_method(Constants.ACC_PUBLIC,
-                             new Signature("get" + property,
-                                           type,
-                                           Constants.TYPES_EMPTY),
-                             null);
+                    new Signature("get" + property,
+                            type,
+                            Constants.TYPES_EMPTY),
+                    null);
             e.load_this();
             e.getfield(name);
             e.return_value();
             e.end_method();
 
             e = begin_method(Constants.ACC_PUBLIC,
-                             new Signature("set" + property,
-                                           Type.VOID_TYPE,
-                                           new Type[]{ type }),
-                             null);
+                    new Signature("set" + property,
+                            Type.VOID_TYPE,
+                            new Type[]{type}),
+                    null);
             e.load_this();
             e.load_arg(0);
             e.putfield(name);
             e.return_value();
             e.end_method();
         }
+    }
+
+    public interface Callback {
+        String getPropertyName(Type owner, String fieldName);
     }
 }

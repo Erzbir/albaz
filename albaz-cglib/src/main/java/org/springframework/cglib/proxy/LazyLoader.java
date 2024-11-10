@@ -24,6 +24,7 @@ public interface LazyLoader extends Callback {
      * dispatched. Called as soon as the first lazily-loaded method in
      * the enhanced instance is invoked. The same object is then used
      * for every future method call to the proxy instance.
+     *
      * @return an object that can invoke the method
      */
     Object loadObject() throws Exception;

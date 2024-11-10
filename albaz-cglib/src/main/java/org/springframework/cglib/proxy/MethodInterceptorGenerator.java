@@ -27,52 +27,61 @@ import java.util.Map;
 
 @SuppressWarnings({"rawtypes", "unchecked", "deprecation"})
 class MethodInterceptorGenerator
-implements CallbackGenerator
-{
+        implements CallbackGenerator {
     public static final MethodInterceptorGenerator INSTANCE = new MethodInterceptorGenerator();
 
     static final String EMPTY_ARGS_NAME = "CGLIB$emptyArgs";
     static final String FIND_PROXY_NAME = "CGLIB$findMethodProxy";
-    static final Class[] FIND_PROXY_TYPES = { Signature.class };
+    static final Class[] FIND_PROXY_TYPES = {Signature.class};
 
     private static final Type ABSTRACT_METHOD_ERROR =
-      TypeUtils.parseType("AbstractMethodError");
+            TypeUtils.parseType("AbstractMethodError");
     private static final Type METHOD =
-      TypeUtils.parseType("java.lang.reflect.Method");
+            TypeUtils.parseType("java.lang.reflect.Method");
     private static final Type REFLECT_UTILS =
-      TypeUtils.parseType("org.springframework.cglib.core.ReflectUtils");
+            TypeUtils.parseType("org.springframework.cglib.core.ReflectUtils");
     private static final Type METHOD_PROXY =
-      TypeUtils.parseType("org.springframework.cglib.proxy.MethodProxy");
+            TypeUtils.parseType("org.springframework.cglib.proxy.MethodProxy");
     private static final Type METHOD_INTERCEPTOR =
-      TypeUtils.parseType("org.springframework.cglib.proxy.MethodInterceptor");
+            TypeUtils.parseType("org.springframework.cglib.proxy.MethodInterceptor");
     private static final Signature GET_DECLARED_METHODS =
-      TypeUtils.parseSignature("java.lang.reflect.Method[] getDeclaredMethods()");
+            TypeUtils.parseSignature("java.lang.reflect.Method[] getDeclaredMethods()");
     private static final Signature FIND_METHODS =
-      TypeUtils.parseSignature("java.lang.reflect.Method[] findMethods(String[], java.lang.reflect.Method[])");
+            TypeUtils.parseSignature("java.lang.reflect.Method[] findMethods(String[], java.lang.reflect.Method[])");
     private static final Signature MAKE_PROXY =
-      new Signature("create", METHOD_PROXY, new Type[]{
-          Constants.TYPE_CLASS,
-          Constants.TYPE_CLASS,
-          Constants.TYPE_STRING,
-          Constants.TYPE_STRING,
-          Constants.TYPE_STRING
-      });
+            new Signature("create", METHOD_PROXY, new Type[]{
+                    Constants.TYPE_CLASS,
+                    Constants.TYPE_CLASS,
+                    Constants.TYPE_STRING,
+                    Constants.TYPE_STRING,
+                    Constants.TYPE_STRING
+            });
     private static final Signature INTERCEPT =
-      new Signature("intercept", Constants.TYPE_OBJECT, new Type[]{
-          Constants.TYPE_OBJECT,
-          METHOD,
-          Constants.TYPE_OBJECT_ARRAY,
-          METHOD_PROXY
-      });
+            new Signature("intercept", Constants.TYPE_OBJECT, new Type[]{
+                    Constants.TYPE_OBJECT,
+                    METHOD,
+                    Constants.TYPE_OBJECT_ARRAY,
+                    METHOD_PROXY
+            });
     private static final Signature FIND_PROXY =
-      new Signature(FIND_PROXY_NAME, METHOD_PROXY, new Type[]{ Constants.TYPE_SIGNATURE });
+            new Signature(FIND_PROXY_NAME, METHOD_PROXY, new Type[]{Constants.TYPE_SIGNATURE});
     private static final Signature TO_STRING =
-      TypeUtils.parseSignature("String toString()");
-    private static final Transformer METHOD_TO_CLASS = value -> ((MethodInfo)value).getClassInfo();
+            TypeUtils.parseSignature("String toString()");
+    private static final Transformer METHOD_TO_CLASS = value -> ((MethodInfo) value).getClassInfo();
+
+    private static void superHelper(CodeEmitter e, MethodInfo method, Context context) {
+        if (TypeUtils.isAbstract(method.getModifiers())) {
+            e.throw_exception(ABSTRACT_METHOD_ERROR, method.toString() + " is abstract");
+        } else {
+            e.load_this();
+            context.emitLoadArgsAndInvoke(e, method);
+        }
+    }
 
     private String getMethodField(Signature impl) {
         return impl.getName() + "$Method";
     }
+
     private String getMethodProxyField(Signature impl) {
         return impl.getName() + "$Proxy";
     }
@@ -80,8 +89,8 @@ implements CallbackGenerator
     @Override
     public void generate(ClassEmitter ce, Context context, List methods) {
         Map sigMap = new HashMap();
-        for (Iterator it = methods.iterator(); it.hasNext();) {
-            MethodInfo method = (MethodInfo)it.next();
+        for (Iterator it = methods.iterator(); it.hasNext(); ) {
+            MethodInfo method = (MethodInfo) it.next();
             Signature sig = method.getSignature();
             Signature impl = context.getImplSignature(method);
 
@@ -96,8 +105,8 @@ implements CallbackGenerator
 
             // access method
             e = ce.begin_method(Constants.ACC_FINAL,
-                                impl,
-                                method.getExceptionTypes());
+                    impl,
+                    method.getExceptionTypes());
             superHelper(e, method, context);
             e.return_value();
             e.end_method();
@@ -131,16 +140,6 @@ implements CallbackGenerator
         generateFindProxy(ce, sigMap);
     }
 
-    private static void superHelper(CodeEmitter e, MethodInfo method, Context context)
-    {
-        if (TypeUtils.isAbstract(method.getModifiers())) {
-            e.throw_exception(ABSTRACT_METHOD_ERROR, method.toString() + " is abstract" );
-        } else {
-            e.load_this();
-            context.emitLoadArgsAndInvoke(e, method);
-        }
-    }
-
     @Override
     public void generateStatic(CodeEmitter e, Context context, List methods) throws Exception {
         /* generates:
@@ -166,14 +165,14 @@ implements CallbackGenerator
         e.store_local(thisclass);
 
         Map methodsByClass = CollectionUtils.bucket(methods, METHOD_TO_CLASS);
-        for (Iterator i = methodsByClass.keySet().iterator(); i.hasNext();) {
-            ClassInfo classInfo = (ClassInfo)i.next();
+        for (Iterator i = methodsByClass.keySet().iterator(); i.hasNext(); ) {
+            ClassInfo classInfo = (ClassInfo) i.next();
 
-            List classMethods = (List)methodsByClass.get(classInfo);
+            List classMethods = (List) methodsByClass.get(classInfo);
             e.push(2 * classMethods.size());
             e.newarray(Constants.TYPE_STRING);
             for (int index = 0; index < classMethods.size(); index++) {
-                MethodInfo method = (MethodInfo)classMethods.get(index);
+                MethodInfo method = (MethodInfo) classMethods.get(index);
                 Signature sig = method.getSignature();
                 e.dup();
                 e.push(2 * index);
@@ -192,7 +191,7 @@ implements CallbackGenerator
             e.invoke_static(REFLECT_UTILS, FIND_METHODS);
 
             for (int index = 0; index < classMethods.size(); index++) {
-                MethodInfo method = (MethodInfo)classMethods.get(index);
+                MethodInfo method = (MethodInfo) classMethods.get(index);
                 Signature sig = method.getSignature();
                 Signature impl = context.getImplSignature(method);
                 e.dup();
@@ -214,16 +213,17 @@ implements CallbackGenerator
 
     public void generateFindProxy(ClassEmitter ce, final Map sigMap) {
         final CodeEmitter e = ce.begin_method(Constants.ACC_PUBLIC | Constants.ACC_STATIC,
-                                              FIND_PROXY,
-                                              null);
+                FIND_PROXY,
+                null);
         e.load_arg(0);
         e.invoke_virtual(Constants.TYPE_OBJECT, TO_STRING);
         ObjectSwitchCallback callback = new ObjectSwitchCallback() {
             @Override
             public void processCase(Object key, Label end) {
-                e.getfield((String)sigMap.get(key));
+                e.getfield((String) sigMap.get(key));
                 e.return_value();
             }
+
             @Override
             public void processDefault() {
                 e.aconst_null();
@@ -231,9 +231,9 @@ implements CallbackGenerator
             }
         };
         EmitUtils.string_switch(e,
-                                (String[])sigMap.keySet().toArray(new String[0]),
-                                Constants.SWITCH_STYLE_HASH,
-                                callback);
+                (String[]) sigMap.keySet().toArray(new String[0]),
+                Constants.SWITCH_STYLE_HASH,
+                callback);
         e.end_method();
     }
 }

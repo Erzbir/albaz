@@ -27,60 +27,60 @@ package org.springframework.cglib.core;
  */
 public class ClassLoaderAwareGeneratorStrategy extends DefaultGeneratorStrategy {
 
-	private final ClassLoader classLoader;
+    private final ClassLoader classLoader;
 
-	private final GeneratorStrategy delegate;
-
-
-	/**
-	 * Create a default GeneratorStrategy, exposing the given ClassLoader.
-	 * @param classLoader the ClassLoader to expose as current thread context ClassLoader
-	 */
-	public ClassLoaderAwareGeneratorStrategy(ClassLoader classLoader) {
-		this.classLoader = classLoader;
-		this.delegate = super::generate;
-	}
-
-	/**
-	 * Create a decorator for the given GeneratorStrategy delegate, exposing the given ClassLoader.
-	 * @param classLoader the ClassLoader to expose as current thread context ClassLoader
-	 * @since 6.2
-	 */
-	public ClassLoaderAwareGeneratorStrategy(ClassLoader classLoader, GeneratorStrategy delegate) {
-		this.classLoader = classLoader;
-		this.delegate = delegate;
-	}
+    private final GeneratorStrategy delegate;
 
 
-	@Override
-	public byte[] generate(ClassGenerator cg) throws Exception {
-		if (this.classLoader == null) {
-			return this.delegate.generate(cg);
-		}
+    /**
+     * Create a default GeneratorStrategy, exposing the given ClassLoader.
+     *
+     * @param classLoader the ClassLoader to expose as current thread context ClassLoader
+     */
+    public ClassLoaderAwareGeneratorStrategy(ClassLoader classLoader) {
+        this.classLoader = classLoader;
+        this.delegate = super::generate;
+    }
 
-		Thread currentThread = Thread.currentThread();
-		ClassLoader threadContextClassLoader;
-		try {
-			threadContextClassLoader = currentThread.getContextClassLoader();
-		}
-		catch (Throwable ex) {
-			// Cannot access thread context ClassLoader - falling back...
-			return this.delegate.generate(cg);
-		}
+    /**
+     * Create a decorator for the given GeneratorStrategy delegate, exposing the given ClassLoader.
+     *
+     * @param classLoader the ClassLoader to expose as current thread context ClassLoader
+     * @since 6.2
+     */
+    public ClassLoaderAwareGeneratorStrategy(ClassLoader classLoader, GeneratorStrategy delegate) {
+        this.classLoader = classLoader;
+        this.delegate = delegate;
+    }
 
-		boolean overrideClassLoader = !this.classLoader.equals(threadContextClassLoader);
-		if (overrideClassLoader) {
-			currentThread.setContextClassLoader(this.classLoader);
-		}
-		try {
-			return this.delegate.generate(cg);
-		}
-		finally {
-			if (overrideClassLoader) {
-				// Reset original thread context ClassLoader.
-				currentThread.setContextClassLoader(threadContextClassLoader);
-			}
-		}
-	}
+
+    @Override
+    public byte[] generate(ClassGenerator cg) throws Exception {
+        if (this.classLoader == null) {
+            return this.delegate.generate(cg);
+        }
+
+        Thread currentThread = Thread.currentThread();
+        ClassLoader threadContextClassLoader;
+        try {
+            threadContextClassLoader = currentThread.getContextClassLoader();
+        } catch (Throwable ex) {
+            // Cannot access thread context ClassLoader - falling back...
+            return this.delegate.generate(cg);
+        }
+
+        boolean overrideClassLoader = !this.classLoader.equals(threadContextClassLoader);
+        if (overrideClassLoader) {
+            currentThread.setContextClassLoader(this.classLoader);
+        }
+        try {
+            return this.delegate.generate(cg);
+        } finally {
+            if (overrideClassLoader) {
+                // Reset original thread context ClassLoader.
+                currentThread.setContextClassLoader(threadContextClassLoader);
+            }
+        }
+    }
 
 }

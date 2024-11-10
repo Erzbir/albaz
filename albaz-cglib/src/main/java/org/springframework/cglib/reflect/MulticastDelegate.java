@@ -32,6 +32,12 @@ abstract public class MulticastDelegate implements Cloneable {
     protected MulticastDelegate() {
     }
 
+    public static MulticastDelegate create(Class iface) {
+        Generator gen = new Generator();
+        gen.setInterface(iface);
+        return gen.create();
+    }
+
     public List getTargets() {
         return new ArrayList(Arrays.asList(targets));
     }
@@ -61,22 +67,16 @@ abstract public class MulticastDelegate implements Cloneable {
 
     abstract public MulticastDelegate newInstance();
 
-    public static MulticastDelegate create(Class iface) {
-        Generator gen = new Generator();
-        gen.setInterface(iface);
-        return gen.create();
-    }
-
     public static class Generator extends AbstractClassGenerator {
         private static final Source SOURCE = new Source(MulticastDelegate.class.getName());
         private static final Type MULTICAST_DELEGATE =
-          TypeUtils.parseType("org.springframework.cglib.reflect.MulticastDelegate");
+                TypeUtils.parseType("org.springframework.cglib.reflect.MulticastDelegate");
         private static final Signature NEW_INSTANCE =
-          new Signature("newInstance", MULTICAST_DELEGATE, new Type[0]);
+                new Signature("newInstance", MULTICAST_DELEGATE, new Type[0]);
         private static final Signature ADD_DELEGATE =
-          new Signature("add", MULTICAST_DELEGATE, new Type[]{ Constants.TYPE_OBJECT });
+                new Signature("add", MULTICAST_DELEGATE, new Type[]{Constants.TYPE_OBJECT});
         private static final Signature ADD_HELPER =
-          new Signature("addHelper", MULTICAST_DELEGATE, new Type[]{ Constants.TYPE_OBJECT });
+                new Signature("addHelper", MULTICAST_DELEGATE, new Type[]{Constants.TYPE_OBJECT});
 
         private Class iface;
 
@@ -100,7 +100,7 @@ abstract public class MulticastDelegate implements Cloneable {
 
         public MulticastDelegate create() {
             setNamePrefix(MulticastDelegate.class.getName());
-            return (MulticastDelegate)super.create(iface.getName());
+            return (MulticastDelegate) super.create(iface.getName());
         }
 
         @Override
@@ -109,11 +109,11 @@ abstract public class MulticastDelegate implements Cloneable {
 
             ClassEmitter ce = new ClassEmitter(cv);
             ce.begin_class(Constants.V1_8,
-                           Constants.ACC_PUBLIC,
-                           getClassName(),
-                           MULTICAST_DELEGATE,
-                           new Type[]{ Type.getType(iface) },
-                           Constants.SOURCE_FILE);
+                    Constants.ACC_PUBLIC,
+                    getClassName(),
+                    MULTICAST_DELEGATE,
+                    new Type[]{Type.getType(iface)},
+                    Constants.SOURCE_FILE);
             EmitUtils.null_constructor(ce);
 
             // generate proxied method
@@ -157,13 +157,13 @@ abstract public class MulticastDelegate implements Cloneable {
             e.super_getfield("targets", Constants.TYPE_OBJECT_ARRAY);
             final Local result2 = result;
             EmitUtils.process_array(e, Constants.TYPE_OBJECT_ARRAY, type -> {
-			    e.checkcast(Type.getType(iface));
-			    e.load_args();
-			    e.invoke(method);
-			    if (returns) {
-			        e.store_local(result2);
-			    }
-			});
+                e.checkcast(Type.getType(iface));
+                e.load_args();
+                e.invoke(method);
+                if (returns) {
+                    e.store_local(result2);
+                }
+            });
             if (returns) {
                 e.load_local(result);
             }
@@ -174,12 +174,12 @@ abstract public class MulticastDelegate implements Cloneable {
         @Override
         protected Object firstInstance(Class type) {
             // make a new instance in case first object is used with a long list of targets
-            return ((MulticastDelegate)ReflectUtils.newInstance(type)).newInstance();
+            return ((MulticastDelegate) ReflectUtils.newInstance(type)).newInstance();
         }
 
         @Override
         protected Object nextInstance(Object instance) {
-            return ((MulticastDelegate)instance).newInstance();
+            return ((MulticastDelegate) instance).newInstance();
         }
     }
 }

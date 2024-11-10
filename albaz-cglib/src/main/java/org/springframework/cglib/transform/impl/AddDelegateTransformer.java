@@ -30,16 +30,18 @@ import java.lang.reflect.Modifier;
 public class AddDelegateTransformer extends ClassEmitterTransformer {
     private static final String DELEGATE = "$CGLIB_DELEGATE";
     private static final Signature CSTRUCT_OBJECT =
-      TypeUtils.parseSignature("void <init>(Object)");
+            TypeUtils.parseSignature("void <init>(Object)");
 
     private Class[] delegateIf;
     private Class delegateImpl;
     private Type delegateType;
 
-    /** Creates a new instance of AddDelegateTransformer */
+    /**
+     * Creates a new instance of AddDelegateTransformer
+     */
     public AddDelegateTransformer(Class delegateIf[], Class delegateImpl) {
         try {
-            delegateImpl.getConstructor(new Class[]{ Object.class });
+            delegateImpl.getConstructor(new Class[]{Object.class});
             this.delegateIf = delegateIf;
             this.delegateImpl = delegateImpl;
             delegateType = Type.getType(delegateImpl);
@@ -51,25 +53,25 @@ public class AddDelegateTransformer extends ClassEmitterTransformer {
     @Override
     public void begin_class(int version, int access, String className, Type superType, Type[] interfaces, String sourceFile) {
 
-        if(!TypeUtils.isInterface(access)){
+        if (!TypeUtils.isInterface(access)) {
 
-        Type[] all = TypeUtils.add(interfaces, TypeUtils.getTypes(delegateIf));
-        super.begin_class(version, access, className, superType, all, sourceFile);
+            Type[] all = TypeUtils.add(interfaces, TypeUtils.getTypes(delegateIf));
+            super.begin_class(version, access, className, superType, all, sourceFile);
 
-        declare_field(Constants.ACC_PRIVATE | Constants.ACC_TRANSIENT,
-                      DELEGATE,
-                      delegateType,
-                      null);
-        for (Class element : delegateIf) {
-            Method[] methods = element.getMethods();
-            for (Method method : methods) {
-                if (Modifier.isAbstract(method.getModifiers())) {
-                    addDelegate(method);
+            declare_field(Constants.ACC_PRIVATE | Constants.ACC_TRANSIENT,
+                    DELEGATE,
+                    delegateType,
+                    null);
+            for (Class element : delegateIf) {
+                Method[] methods = element.getMethods();
+                for (Method method : methods) {
+                    if (Modifier.isAbstract(method.getModifiers())) {
+                        addDelegate(method);
+                    }
                 }
             }
-        }
-        }else{
-           super.begin_class(version, access, className, superType, interfaces, sourceFile);
+        } else {
+            super.begin_class(version, access, className, superType, interfaces, sourceFile);
         }
     }
 
@@ -79,6 +81,7 @@ public class AddDelegateTransformer extends ClassEmitterTransformer {
         if (sig.getName().equals(Constants.CONSTRUCTOR_NAME)) {
             return new CodeEmitter(e) {
                 private boolean transformInit = true;
+
                 @Override
                 public void visitMethodInsn(int opcode, String owner, String name, String desc, boolean itf) {
                     super.visitMethodInsn(opcode, owner, name, desc, itf);
@@ -101,7 +104,7 @@ public class AddDelegateTransformer extends ClassEmitterTransformer {
         Method delegate;
         try {
             delegate = delegateImpl.getMethod(m.getName(), m.getParameterTypes());
-            if (!delegate.getReturnType().getName().equals(m.getReturnType().getName())){
+            if (!delegate.getReturnType().getName().equals(m.getReturnType().getName())) {
                 throw new IllegalArgumentException("Invalid delegate signature " + delegate);
             }
         } catch (NoSuchMethodException e) {

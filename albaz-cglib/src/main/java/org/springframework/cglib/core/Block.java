@@ -17,8 +17,7 @@ package org.springframework.cglib.core;
 
 import org.springframework.asm.Label;
 
-public class Block
-{
+public class Block {
     private CodeEmitter e;
     private Label start;
     private Label end;

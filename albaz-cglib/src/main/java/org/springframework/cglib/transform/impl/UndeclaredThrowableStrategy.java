@@ -28,26 +28,26 @@ import org.springframework.cglib.transform.TransformingClassGenerator;
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class UndeclaredThrowableStrategy extends DefaultGeneratorStrategy {
 
+    private static final MethodFilter TRANSFORM_FILTER = (access, name, desc, signature, exceptions) -> !TypeUtils.isPrivate(access) && name.indexOf('$') < 0;
     private Class wrapper;
 
-	/**
+    /**
      * Create a new instance of this strategy.
+     *
      * @param wrapper a class which extends either directly or
-     * indirectly from <code>Throwable</code> and which has at least one
-     * constructor that takes a single argument of type
-     * <code>Throwable</code>, for example
-     * <code>java.lang.reflect.UndeclaredThrowableException.class</code>
+     *                indirectly from <code>Throwable</code> and which has at least one
+     *                constructor that takes a single argument of type
+     *                <code>Throwable</code>, for example
+     *                <code>java.lang.reflect.UndeclaredThrowableException.class</code>
      */
     public UndeclaredThrowableStrategy(Class wrapper) {
-       this.wrapper = wrapper;
+        this.wrapper = wrapper;
     }
 
-    private static final MethodFilter TRANSFORM_FILTER = (access, name, desc, signature, exceptions) -> !TypeUtils.isPrivate(access) && name.indexOf('$') < 0;
-
     @Override
-	protected ClassGenerator transform(ClassGenerator cg) throws Exception {
-    	 ClassTransformer   tr = new UndeclaredThrowableTransformer(wrapper);
-         tr = new MethodFilterTransformer(TRANSFORM_FILTER, tr);
+    protected ClassGenerator transform(ClassGenerator cg) throws Exception {
+        ClassTransformer tr = new UndeclaredThrowableTransformer(wrapper);
+        tr = new MethodFilterTransformer(TRANSFORM_FILTER, tr);
         return new TransformingClassGenerator(cg, tr);
     }
 }

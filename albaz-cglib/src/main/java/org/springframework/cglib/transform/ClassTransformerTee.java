@@ -28,7 +28,7 @@ public class ClassTransformerTee extends ClassTransformer {
     }
 
     @Override
-	public void setTarget(ClassVisitor target) {
+    public void setTarget(ClassVisitor target) {
         cv = new ClassVisitorTee(branch, target);
     }
 }

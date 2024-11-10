@@ -25,15 +25,15 @@ import java.lang.reflect.Modifier;
 @SuppressWarnings({"rawtypes", "unchecked"})
 class BulkBeanEmitter extends ClassEmitter {
     private static final Signature GET_PROPERTY_VALUES =
-      TypeUtils.parseSignature("void getPropertyValues(Object, Object[])");
+            TypeUtils.parseSignature("void getPropertyValues(Object, Object[])");
     private static final Signature SET_PROPERTY_VALUES =
-      TypeUtils.parseSignature("void setPropertyValues(Object, Object[])");
+            TypeUtils.parseSignature("void setPropertyValues(Object, Object[])");
     private static final Signature CSTRUCT_EXCEPTION =
-      TypeUtils.parseConstructor("Throwable, int");
+            TypeUtils.parseConstructor("Throwable, int");
     private static final Type BULK_BEAN =
-      TypeUtils.parseType("org.springframework.cglib.beans.BulkBean");
+            TypeUtils.parseType("org.springframework.cglib.beans.BulkBean");
     private static final Type BULK_BEAN_EXCEPTION =
-      TypeUtils.parseType("org.springframework.cglib.beans.BulkBeanException");
+            TypeUtils.parseType("org.springframework.cglib.beans.BulkBeanException");
 
     public BulkBeanEmitter(ClassVisitor v,
                            String className,
@@ -52,6 +52,42 @@ class BulkBeanEmitter extends ClassEmitter {
         generateGet(target, getters);
         generateSet(target, setters);
         end_class();
+    }
+
+    private static void validate(Class target,
+                                 String[] getters,
+                                 String[] setters,
+                                 Class[] types,
+                                 Method[] getters_out,
+                                 Method[] setters_out) {
+        int i = -1;
+        if (setters.length != types.length || getters.length != types.length) {
+            throw new BulkBeanException("accessor array length must be equal type array length", i);
+        }
+        try {
+            for (i = 0; i < types.length; i++) {
+                if (getters[i] != null) {
+                    Method method = ReflectUtils.findDeclaredMethod(target, getters[i], null);
+                    if (method.getReturnType() != types[i]) {
+                        throw new BulkBeanException("Specified type " + types[i] +
+                                " does not match declared type " + method.getReturnType(), i);
+                    }
+                    if (Modifier.isPrivate(method.getModifiers())) {
+                        throw new BulkBeanException("Property is private", i);
+                    }
+                    getters_out[i] = method;
+                }
+                if (setters[i] != null) {
+                    Method method = ReflectUtils.findDeclaredMethod(target, setters[i], new Class[]{types[i]});
+                    if (Modifier.isPrivate(method.getModifiers())) {
+                        throw new BulkBeanException("Property is private", i);
+                    }
+                    setters_out[i] = method;
+                }
+            }
+        } catch (NoSuchMethodException e) {
+            throw new BulkBeanException("Cannot find specified property", i);
+        }
     }
 
     private void generateGet(final Class target, final Method[] getters) {
@@ -116,41 +152,5 @@ class BulkBeanEmitter extends ClassEmitter {
             e.return_value();
         }
         e.end_method();
-    }
-
-    private static void validate(Class target,
-                                 String[] getters,
-                                 String[] setters,
-                                 Class[] types,
-                                 Method[] getters_out,
-                                 Method[] setters_out) {
-        int i = -1;
-        if (setters.length != types.length || getters.length != types.length) {
-            throw new BulkBeanException("accessor array length must be equal type array length", i);
-        }
-        try {
-            for (i = 0; i < types.length; i++) {
-                if (getters[i] != null) {
-                    Method method = ReflectUtils.findDeclaredMethod(target, getters[i], null);
-                    if (method.getReturnType() != types[i]) {
-                        throw new BulkBeanException("Specified type " + types[i] +
-                                                    " does not match declared type " + method.getReturnType(), i);
-                    }
-                    if (Modifier.isPrivate(method.getModifiers())) {
-                        throw new BulkBeanException("Property is private", i);
-                    }
-                    getters_out[i] = method;
-                }
-                if (setters[i] != null) {
-                    Method method = ReflectUtils.findDeclaredMethod(target, setters[i], new Class[]{ types[i] });
-                    if (Modifier.isPrivate(method.getModifiers()) ){
-                        throw new BulkBeanException("Property is private", i);
-                    }
-                    setters_out[i] = method;
-                }
-            }
-        } catch (NoSuchMethodException e) {
-            throw new BulkBeanException("Cannot find specified property", i);
-        }
     }
 }

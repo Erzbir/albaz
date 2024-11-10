@@ -38,8 +38,8 @@ import java.security.ProtectionDomain;
  *
  * <h2>Delegate</h2>
  * <p>
- *   Any interface with one method can become the interface for a delegate.
- *   Consider the example below:
+ * Any interface with one method can become the interface for a delegate.
+ * Consider the example below:
  * </p>
  *
  * <pre>
@@ -49,11 +49,11 @@ import java.security.ProtectionDomain;
  * </pre>
  *
  * <p>
- *   The interface above is an example of an interface that can become a
- *   delegate.  It has only one method, and the interface is public.  In
- *   order to create a delegate for that method, all we have to do is
- *   call <code>MethodDelegate.create(this, "alternateMain", MainDelegate.class)</code>.
- *   The following program will show how to use it:
+ * The interface above is an example of an interface that can become a
+ * delegate.  It has only one method, and the interface is public.  In
+ * order to create a delegate for that method, all we have to do is
+ * call <code>MethodDelegate.create(this, "alternateMain", MainDelegate.class)</code>.
+ * The following program will show how to use it:
  * </p>
  *
  * <pre>
@@ -75,48 +75,44 @@ import java.security.ProtectionDomain;
  * </pre>
  *
  * <p>
- *   By themselves, delegates don't do much.  Their true power lies in the fact that
- *   they can be treated like objects, and passed to other methods.  In fact that is
- *   one of the key building blocks of building Intelligent Agents which in tern are
- *   the foundation of artificial intelligence.  In the above program, we could have
- *   easily created the delegate to match the static <code>main</code> method by
- *   substituting the delegate creation call with this:
- *   <code>MethodDelegate.createStatic(getClass(), "main", MainDelegate.class)</code>.
+ * By themselves, delegates don't do much.  Their true power lies in the fact that
+ * they can be treated like objects, and passed to other methods.  In fact that is
+ * one of the key building blocks of building Intelligent Agents which in tern are
+ * the foundation of artificial intelligence.  In the above program, we could have
+ * easily created the delegate to match the static <code>main</code> method by
+ * substituting the delegate creation call with this:
+ * <code>MethodDelegate.createStatic(getClass(), "main", MainDelegate.class)</code>.
  * </p>
  * <p>
- *   Another key use for Delegates is to register event listeners.  It is much easier
- *   to have all the code for your events separated out into methods instead of individual
- *   classes.  One of the ways Java gets around that is to create anonymous classes.
- *   They are particularly troublesome because many Debuggers do not know what to do
- *   with them.  Anonymous classes tend to duplicate alot of code as well.  We can
- *   use any interface with one declared method to forward events to any method that
- *   matches the signature (although the method name can be different).
+ * Another key use for Delegates is to register event listeners.  It is much easier
+ * to have all the code for your events separated out into methods instead of individual
+ * classes.  One of the ways Java gets around that is to create anonymous classes.
+ * They are particularly troublesome because many Debuggers do not know what to do
+ * with them.  Anonymous classes tend to duplicate alot of code as well.  We can
+ * use any interface with one declared method to forward events to any method that
+ * matches the signature (although the method name can be different).
  * </p>
  *
  * <h3>Equality</h3>
- *  The criteria that we use to test if two delegates are equal are:
- *   <ul>
- *     <li>
- *       They both refer to the same instance.  That is, the <code>instance</code>
- *       parameter passed to the newDelegate method was the same for both. The
- *       instances are compared with the identity equality operator, <code>==</code>.
- *     </li>
- *     <li>They refer to the same method as resolved by <code>Method.equals</code>.</li>
- *   </ul>
+ * The criteria that we use to test if two delegates are equal are:
+ * <ul>
+ *   <li>
+ *     They both refer to the same instance.  That is, the <code>instance</code>
+ *     parameter passed to the newDelegate method was the same for both. The
+ *     instances are compared with the identity equality operator, <code>==</code>.
+ *   </li>
+ *   <li>They refer to the same method as resolved by <code>Method.equals</code>.</li>
+ * </ul>
  *
  * @version $Id: MethodDelegate.java,v 1.25 2006/03/05 02:43:19 herbyderby Exp $
  */
 @SuppressWarnings({"rawtypes", "unchecked"})
 abstract public class MethodDelegate {
     private static final MethodDelegateKey KEY_FACTORY =
-      (MethodDelegateKey)KeyFactory.create(MethodDelegateKey.class, KeyFactory.CLASS_BY_NAME);
+            (MethodDelegateKey) KeyFactory.create(MethodDelegateKey.class, KeyFactory.CLASS_BY_NAME);
 
     protected Object target;
     protected String eqMethod;
-
-    interface MethodDelegateKey {
-        Object newInstance(Class delegateClass, String methodName, Class iface);
-    }
 
     public static MethodDelegate createStatic(Class targetClass, String methodName, Class iface) {
         Generator gen = new Generator();
@@ -136,7 +132,7 @@ abstract public class MethodDelegate {
 
     @Override
     public boolean equals(Object obj) {
-        MethodDelegate other = (MethodDelegate)obj;
+        MethodDelegate other = (MethodDelegate) obj;
         return (other != null && target == other.target) && eqMethod.equals(other.eqMethod);
     }
 
@@ -151,12 +147,16 @@ abstract public class MethodDelegate {
 
     abstract public MethodDelegate newInstance(Object target);
 
+    interface MethodDelegateKey {
+        Object newInstance(Class delegateClass, String methodName, Class iface);
+    }
+
     public static class Generator extends AbstractClassGenerator {
         private static final Source SOURCE = new Source(MethodDelegate.class.getName());
         private static final Type METHOD_DELEGATE =
-          TypeUtils.parseType("org.springframework.cglib.reflect.MethodDelegate");
+                TypeUtils.parseType("org.springframework.cglib.reflect.MethodDelegate");
         private static final Signature NEW_INSTANCE =
-          new Signature("newInstance", METHOD_DELEGATE, new Type[]{ Constants.TYPE_OBJECT });
+                new Signature("newInstance", METHOD_DELEGATE, new Type[]{Constants.TYPE_OBJECT});
 
         private Object target;
         private Class targetClass;
@@ -197,17 +197,17 @@ abstract public class MethodDelegate {
         public MethodDelegate create() {
             setNamePrefix(targetClass.getName());
             Object key = KEY_FACTORY.newInstance(targetClass, methodName, iface);
-            return (MethodDelegate)super.create(key);
+            return (MethodDelegate) super.create(key);
         }
 
         @Override
         protected Object firstInstance(Class type) {
-            return ((MethodDelegate)ReflectUtils.newInstance(type)).newInstance(target);
+            return ((MethodDelegate) ReflectUtils.newInstance(type)).newInstance(target);
         }
 
         @Override
         protected Object nextInstance(Object instance) {
-            return ((MethodDelegate)instance).newInstance(target);
+            return ((MethodDelegate) instance).newInstance(target);
         }
 
         @Override
@@ -228,11 +228,11 @@ abstract public class MethodDelegate {
             ClassEmitter ce = new ClassEmitter(v);
             CodeEmitter e;
             ce.begin_class(Constants.V1_8,
-                           Constants.ACC_PUBLIC,
-                           getClassName(),
-                           METHOD_DELEGATE,
-                           new Type[]{ Type.getType(iface) },
-                           Constants.SOURCE_FILE);
+                    Constants.ACC_PUBLIC,
+                    getClassName(),
+                    METHOD_DELEGATE,
+                    new Type[]{Type.getType(iface)},
+                    Constants.SOURCE_FILE);
             ce.declare_field(Constants.PRIVATE_FINAL_STATIC, "eqMethod", Constants.TYPE_STRING, null);
             EmitUtils.null_constructor(ce);
 

@@ -18,8 +18,28 @@ package org.springframework.cglib.proxy;
 import org.springframework.asm.Type;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
-class CallbackInfo
-{
+class CallbackInfo {
+    private static final CallbackInfo[] CALLBACKS = {
+            new CallbackInfo(NoOp.class, NoOpGenerator.INSTANCE),
+            new CallbackInfo(MethodInterceptor.class, MethodInterceptorGenerator.INSTANCE),
+            new CallbackInfo(InvocationHandler.class, InvocationHandlerGenerator.INSTANCE),
+            new CallbackInfo(LazyLoader.class, LazyLoaderGenerator.INSTANCE),
+            new CallbackInfo(Dispatcher.class, DispatcherGenerator.INSTANCE),
+            new CallbackInfo(FixedValue.class, FixedValueGenerator.INSTANCE),
+            new CallbackInfo(ProxyRefDispatcher.class, DispatcherGenerator.PROXY_REF_INSTANCE),
+    };
+    private Class cls;
+    private CallbackGenerator generator;
+    private Type type;
+
+    private CallbackInfo(Class cls, CallbackGenerator generator) {
+        this.cls = cls;
+        this.generator = generator;
+        type = Type.getType(cls);
+    }
+
+    //////////////////// PRIVATE ////////////////////
+
     public static Type[] determineTypes(Class[] callbackTypes) {
         return determineTypes(callbackTypes, true);
     }
@@ -50,28 +70,6 @@ class CallbackInfo
             generators[i] = getGenerator(callbackTypes[i]);
         }
         return generators;
-    }
-
-    //////////////////// PRIVATE ////////////////////
-
-    private Class cls;
-    private CallbackGenerator generator;
-    private Type type;
-
-    private static final CallbackInfo[] CALLBACKS = {
-        new CallbackInfo(NoOp.class, NoOpGenerator.INSTANCE),
-        new CallbackInfo(MethodInterceptor.class, MethodInterceptorGenerator.INSTANCE),
-        new CallbackInfo(InvocationHandler.class, InvocationHandlerGenerator.INSTANCE),
-        new CallbackInfo(LazyLoader.class, LazyLoaderGenerator.INSTANCE),
-        new CallbackInfo(Dispatcher.class, DispatcherGenerator.INSTANCE),
-        new CallbackInfo(FixedValue.class, FixedValueGenerator.INSTANCE),
-        new CallbackInfo(ProxyRefDispatcher.class, DispatcherGenerator.PROXY_REF_INSTANCE),
-    };
-
-    private CallbackInfo(Class cls, CallbackGenerator generator) {
-        this.cls = cls;
-        this.generator = generator;
-        type = Type.getType(cls);
     }
 
     private static Type determineType(Callback callback, boolean checkAll) {

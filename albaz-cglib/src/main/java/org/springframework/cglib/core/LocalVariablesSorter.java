@@ -44,25 +44,13 @@ import org.springframework.asm.Type;
  */
 public class LocalVariablesSorter extends MethodVisitor {
 
-    /**
-     * Mapping from old to new local variable indexes. A local variable at index
-     * i of size 1 is remapped to 'mapping[2*i]', while a local variable at
-     * index i of size 2 is remapped to 'mapping[2*i+1]'.
-     */
-    private static class State
-    {
-        int[] mapping = new int[40];
-        int nextLocal;
-    }
-
     protected final int firstLocal;
     private final State state;
 
     public LocalVariablesSorter(
-        final int access,
-        final String desc,
-        final MethodVisitor mv)
-    {
+            final int access,
+            final String desc,
+            final MethodVisitor mv) {
         super(Constants.ASM_API, mv);
         state = new State();
         Type[] args = Type.getArgumentTypes(desc);
@@ -80,43 +68,42 @@ public class LocalVariablesSorter extends MethodVisitor {
     }
 
     @Override
-	public void visitVarInsn(final int opcode, final int var) {
+    public void visitVarInsn(final int opcode, final int var) {
         int size = switch (opcode) {
-			case Opcodes.LLOAD, Opcodes.LSTORE, Opcodes.DLOAD, Opcodes.DSTORE -> 2;
-			default -> 1;
-		};
+            case Opcodes.LLOAD, Opcodes.LSTORE, Opcodes.DLOAD, Opcodes.DSTORE -> 2;
+            default -> 1;
+        };
         mv.visitVarInsn(opcode, remap(var, size));
     }
 
     @Override
-	public void visitIincInsn(final int var, final int increment) {
+    public void visitIincInsn(final int var, final int increment) {
         mv.visitIincInsn(remap(var, 1), increment);
     }
 
     @Override
-	public void visitMaxs(final int maxStack, final int maxLocals) {
+    public void visitMaxs(final int maxStack, final int maxLocals) {
         mv.visitMaxs(maxStack, state.nextLocal);
     }
 
     @Override
-	public void visitLocalVariable(
-        final String name,
-        final String desc,
-        final String signature,
-        final Label start,
-        final Label end,
-        final int index)
-    {
+    public void visitLocalVariable(
+            final String name,
+            final String desc,
+            final String signature,
+            final Label start,
+            final Label end,
+            final int index) {
         mv.visitLocalVariable(name, desc, signature, start, end, remap(index));
     }
-
-    // -------------
 
     protected int newLocal(final int size) {
         int var = state.nextLocal;
         state.nextLocal += size;
         return var;
     }
+
+    // -------------
 
     private int remap(final int var, final int size) {
         if (var < firstLocal) {
@@ -151,5 +138,15 @@ public class LocalVariablesSorter extends MethodVisitor {
             throw new IllegalStateException("Unknown local variable " + var);
         }
         return value - 1;
+    }
+
+    /**
+     * Mapping from old to new local variable indexes. A local variable at index
+     * i of size 1 is remapped to 'mapping[2*i]', while a local variable at
+     * index i of size 2 is remapped to 'mapping[2*i+1]'.
+     */
+    private static class State {
+        int[] mapping = new int[40];
+        int nextLocal;
     }
 }

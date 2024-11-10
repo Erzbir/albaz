@@ -7,11 +7,10 @@ import java.util.concurrent.FutureTask;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class LoadingCache<K, KK, V> {
+    public static final Function IDENTITY = key -> key;
     protected final ConcurrentMap<KK, Object> map;
     protected final Function<K, V> loader;
     protected final Function<K, KK> keyMapper;
-
-    public static final Function IDENTITY = key -> key;
 
     public LoadingCache(Function<K, KK> keyMapper, Function<K, V> loader) {
         this.keyMapper = keyMapper;
@@ -37,9 +36,10 @@ public class LoadingCache<K, KK, V> {
     /**
      * Loads entry to the cache.
      * If entry is missing, put {@link FutureTask} first so other competing thread might wait for the result.
-     * @param key original key that would be used to load the instance
+     *
+     * @param key      original key that would be used to load the instance
      * @param cacheKey key that would be used to store the entry in internal map
-     * @param v null or {@link FutureTask<V>}
+     * @param v        null or {@link FutureTask<V>}
      * @return newly created instance
      */
     protected V createEntry(final K key, KK cacheKey, Object v) {
