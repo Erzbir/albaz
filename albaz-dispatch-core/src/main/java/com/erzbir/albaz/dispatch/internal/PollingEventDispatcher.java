@@ -67,15 +67,15 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
                     EventChannelDispatcher<Event> channel = EventChannelDispatcher.INSTANCE;
                     for (Event event : events) {
                         Thread.ofVirtual()
-                                .name("Dispatcher-Sub-Thread")
-                                .start(createTask(channel, event));
+                                .name("Dispatch-Thread-" + Thread.currentThread().threadId())
+                                .start(createDispatchTask(channel, event));
                     }
                 } catch (InterruptedException e) {
                     log.error("Dispatching error: " + e.getMessage());
                 }
             }
         };
-        dispatcherThread = Thread.ofVirtual().name("Dispatcher-Thread").start(runnable);
+        dispatcherThread = Thread.ofVirtual().name("Dispatch-Thread-Main").start(runnable);
     }
 
     /**
@@ -98,7 +98,7 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
         }
     }
 
-    private Runnable createTask(EventChannel<Event> channel, Event event) {
+    private Runnable createDispatchTask(EventChannel<Event> channel, Event event) {
         return () -> {
             try {
                 if (event instanceof CancelableEvent cancelableEvent) {
@@ -127,7 +127,7 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
             } catch (InterruptedException e) {
                 log.error("Dispatching error when join thread: " + dispatcherThread);
             }
-        }, "Dispatch-Guard-Thread");
+        }, "Dispatch-Thread-Guard");
         guardThread.start();
     }
 

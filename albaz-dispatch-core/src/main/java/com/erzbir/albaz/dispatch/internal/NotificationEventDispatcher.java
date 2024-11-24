@@ -19,11 +19,11 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
     @Override
     protected <E extends Event> void dispatchTo(E event, EventChannel<E> channel) {
         Thread.ofVirtual()
-                .name("Dispatcher-Thread-" + Thread.currentThread().threadId())
-                .start(createTask(channel, event));
+                .name("Dispatch-Thread-" + Thread.currentThread().threadId())
+                .start(createDispatchTask(channel, event));
     }
 
-    private <E extends Event> Runnable createTask(EventChannel<E> channel, E event) {
+    private <E extends Event> Runnable createDispatchTask(EventChannel<E> channel, E event) {
         return () -> {
             try {
                 if (event instanceof CancelableEvent cancelableEvent) {
