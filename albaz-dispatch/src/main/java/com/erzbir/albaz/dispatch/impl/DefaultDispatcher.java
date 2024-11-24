@@ -66,7 +66,17 @@ public final class DefaultDispatcher implements EventDispatcher {
     }
 
     @Override
+    public void join(long timeout) {
+        delegate.join();
+    }
+
+    @Override
     public void await() {
+        delegate.await();
+    }
+
+    @Override
+    public void await(long timeout) {
         delegate.await();
     }
 
