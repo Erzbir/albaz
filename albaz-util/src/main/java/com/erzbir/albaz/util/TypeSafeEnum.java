@@ -3,6 +3,9 @@ package com.erzbir.albaz.util;
 import java.io.DataOutputStream;
 import java.io.IOException;
 
+/**
+ * ref : spring
+ */
 public class TypeSafeEnum {
     private final byte key;
     private final String name;

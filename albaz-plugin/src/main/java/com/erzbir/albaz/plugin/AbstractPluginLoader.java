@@ -8,7 +8,6 @@ import java.net.URLClassLoader;
  * @since 1.0.0
  */
 public abstract class AbstractPluginLoader extends URLClassLoader implements PluginLoader {
-
     public AbstractPluginLoader() {
         super(new URL[]{});
     }

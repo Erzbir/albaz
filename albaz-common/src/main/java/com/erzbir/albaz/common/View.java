@@ -7,7 +7,9 @@ import java.util.function.BiConsumer;
 import java.util.stream.Stream;
 
 /**
- * 只读的一个视图
+ * <p>
+ * 只读视图
+ * </p>
  *
  * @author Erzbir
  * @since 1.0.0

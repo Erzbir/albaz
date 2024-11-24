@@ -1,45 +1,57 @@
 package com.erzbir.albaz.dispatch.internal;
 
 import com.erzbir.albaz.dispatch.*;
-import lombok.extern.slf4j.Slf4j;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 /**
+ * <p>
+ * 一些执行器的实现
+ * </p>
+ *
  * @author Erzbir
  * @since 1.0.0
  */
-public interface ListenerInvokers {
-    @Slf4j
+interface ListenerInvokers {
     class BaseListenerInvoker extends AbstractListenerInvoker implements ListenerInvoker {
+        private final Log log = LogFactory.getLog(getClass());
 
-        @SuppressWarnings("unchecked")
+        @SuppressWarnings({"unchecked", "rawtypes"})
         @Override
-        public ListenerResult invoke(ListenerContext listenerContext) {
-            Event event = listenerContext.getEvent();
-            return listenerContext.getListener().onEvent(event);
+        public ListenerStatus invoke(InvokerContext invokerContext) {
+            Event event = invokerContext.getEvent();
+            Listener listener = invokerContext.getListener();
+            log.debug("Invoke event: " + event + " callback: " + listener.getClass().getName());
+            return listener.onEvent(event);
         }
     }
 
-    @Slf4j
+    /**
+     * <p>带有拦截功能的执行器, 拦截后不执行监听回调, 并返回 {@link  ListenerStatus}</p>
+     *
+     * @see ListenerStatus
+     * @see InterceptProcessor
+     */
     class InterceptorInvoker extends AbstractListenerInvoker implements ListenerInvoker {
         private final ListenerInvoker listenerInvoker;
         private final InterceptProcessor interceptProcessor;
 
         public InterceptorInvoker() {
             this.listenerInvoker = new BaseListenerInvoker();
-            this.interceptProcessor = new DefaultInterceptProcessor();
+            this.interceptProcessor = new InternalInterceptProcessor();
         }
 
         @Override
-        public ListenerResult invoke(ListenerContext listenerContext) {
-            if (!intercept(listenerContext)) {
-                return StandardListenerResult.TRUNCATED;
+        public ListenerStatus invoke(InvokerContext invokerContext) {
+            if (!intercept(invokerContext)) {
+                return ListenerStatus.TRUNCATED;
             }
-            return listenerInvoker.invoke(listenerContext);
+            return listenerInvoker.invoke(invokerContext);
         }
 
 
-        private boolean intercept(ListenerContext listenerContext) {
-            return interceptProcessor.intercept(listenerContext, interceptors);
+        private boolean intercept(InvokerContext invokerContext) {
+            return interceptProcessor.intercept(invokerContext, interceptors);
         }
 
     }

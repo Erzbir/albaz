@@ -1,5 +1,7 @@
 package com.erzbir.albaz.dispatch;
 
+import java.util.concurrent.locks.Lock;
+
 /**
  * @author Erzbir
  * @since 1.0.0
@@ -29,4 +31,10 @@ public interface Event {
      * @return 优先级
      */
     int getPriority();
+
+    Lock getBroadCastLock();
+
+    EventContext getContext();
+
+    void setContext(EventContext context);
 }

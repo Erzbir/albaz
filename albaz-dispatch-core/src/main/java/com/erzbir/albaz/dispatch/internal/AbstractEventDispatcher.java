@@ -1,58 +1,65 @@
 package com.erzbir.albaz.dispatch.internal;
 
-import com.erzbir.albaz.dispatch.*;
-import com.erzbir.albaz.interceptor.DispatchInterceptor;
-import com.erzbir.albaz.interceptor.Interceptor;
-import lombok.extern.slf4j.Slf4j;
+import com.erzbir.albaz.common.Interceptor;
+import com.erzbir.albaz.dispatch.Event;
+import com.erzbir.albaz.dispatch.EventChannel;
+import com.erzbir.albaz.dispatch.EventDispatcher;
+import com.erzbir.albaz.dispatch.InterceptProcessor;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
+ * <p>
+ * 一个抽象的事件调度器, 实现了开关和拦截功能, 子类通过重写 {@link  #dispatchTo} 方法实现分发
+ * </p>
+ *
  * @author Erzbir
+ * @see EventDispatcher
+ * @see Interceptor
+ * @see InterceptProcessor
  * @since 1.0.0
  */
-@Slf4j
 public abstract class AbstractEventDispatcher implements EventDispatcher {
-    protected final List<Interceptor<EventContext>> eventDispatchInterceptors = new ArrayList<>();
+    protected final List<Interceptor<Event>> eventDispatchInterceptors = new ArrayList<>();
     protected final AtomicBoolean activated = new AtomicBoolean(false);
-    protected InterceptProcessor interceptProcessor = new DefaultInterceptProcessor();
+    private final Log log = LogFactory.getLog(getClass());
+    protected InterceptProcessor interceptProcessor = new InternalInterceptProcessor();
 
     @Override
     public <E extends Event> void dispatch(E event, EventChannel<E> channel) {
         if (!isActive()) {
+            log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already shutdown, dispatching canceled");
             return;
         }
-        log.debug("Received event: {}", event);
-        DefaultEventContext eventContext = new DefaultEventContext(event);
-        if (!intercept(eventContext)) {
+        log.debug("Received event: " + event);
+        if (!intercept(event)) {
             return;
         }
         if (channel.isCanceled()) {
-            log.debug("EventChannel: {} is already shutdown, dispatching canceled", channel.getClass().getSimpleName());
+            log.warn("EventChannel: " + channel.getClass().getSimpleName() + " is already shutdown, dispatching canceled");
             return;
-        }
-        if (!channel.getListeners().iterator().hasNext()) {
-            log.debug("EventChannel: {} has no listener, dispatching canceled", channel.getClass().getSimpleName());
         }
         dispatchTo(event, channel);
     }
 
     protected abstract <E extends Event> void dispatchTo(E event, EventChannel<E> channel);
 
-    private boolean intercept(EventContext eventContext) {
-        return interceptProcessor.intercept(eventContext, eventDispatchInterceptors);
+    private boolean intercept(Event event) {
+        return interceptProcessor.intercept(event, eventDispatchInterceptors);
     }
 
     @Override
-    public void addInterceptor(DispatchInterceptor dispatchInterceptor) {
+    public void addInterceptor(Interceptor<Event> dispatchInterceptor) {
         eventDispatchInterceptors.add(dispatchInterceptor);
     }
 
     @Override
     public void start() {
-        activated.set(true);
+        activated.compareAndSet(false, true);
     }
 
     @Override
@@ -67,6 +74,6 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
 
     @Override
     public void cancel() {
-        activated.set(false);
+        activated.compareAndSet(true, false);
     }
 }

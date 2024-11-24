@@ -1,12 +1,15 @@
 /**
+ * <p>
+ * 插件模块, 提供插件功能
+ * </p>
+ *
  * @author Erzbir
  * @since 1.0.0
  */
-module com.erzbir.albaz.plugin {
+module albaz.plugin {
     uses com.erzbir.albaz.plugin.Plugin;
-    requires static lombok;
-    requires static org.slf4j;
-    requires com.erzbir.albaz.common;
+    requires albaz.common;
+    requires albaz.jcl;
     exports com.erzbir.albaz.plugin;
     exports com.erzbir.albaz.plugin.exception;
 }

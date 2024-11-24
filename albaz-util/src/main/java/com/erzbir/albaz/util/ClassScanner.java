@@ -1,7 +1,5 @@
 package com.erzbir.albaz.util;
 
-import lombok.Getter;
-import lombok.Setter;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,22 +21,15 @@ import java.util.stream.Collectors;
  * @author erzbir
  * @since 1.0.0
  */
-@Getter
 public class ClassScanner {
 
-    @Setter
     private String basePackage; // 主包
-    @Setter
     private String packageDirName;
-    @Setter
     private Predicate<Class<?>> classPredicate; // 用于过滤
-    @Setter
     private ClassLoader classLoader;
     private Set<Class<?>> classes = new HashSet<>();  // 扫瞄后将字节码放到这个Set
     private Set<String> classesOfLoadError = new HashSet<>();
-    @Setter
     private boolean initialize;
-    @Setter
     private boolean ignoreLoadError;
 
     /**
@@ -157,6 +148,58 @@ public class ClassScanner {
             return getAnnotationFromAnnotation(annotation1, supAnnotationType);
         }
         return null;
+    }
+
+    public String getBasePackage() {
+        return basePackage;
+    }
+
+    public void setBasePackage(String basePackage) {
+        this.basePackage = basePackage;
+    }
+
+    public String getPackageDirName() {
+        return packageDirName;
+    }
+
+    public void setPackageDirName(String packageDirName) {
+        this.packageDirName = packageDirName;
+    }
+
+    public Predicate<Class<?>> getClassPredicate() {
+        return classPredicate;
+    }
+
+    public void setClassPredicate(Predicate<Class<?>> classPredicate) {
+        this.classPredicate = classPredicate;
+    }
+
+    public ClassLoader getClassLoader() {
+        return classLoader;
+    }
+
+    public Set<Class<?>> getClasses() {
+        return classes;
+    }
+
+    public Set<String> getClassesOfLoadError() {
+        return classesOfLoadError;
+    }
+
+    public boolean isInitialize() {
+        return initialize;
+    }
+
+    public void setInitialize(boolean initialize) {
+        this.initialize = initialize;
+    }
+
+    public boolean isIgnoreLoadError() {
+        return ignoreLoadError;
+    }
+
+    public void setIgnoreLoadError(boolean ignoreLoadError) {
+        this.ignoreLoadError = ignoreLoadError;
     }
 
     public Set<Class<?>> scan() {

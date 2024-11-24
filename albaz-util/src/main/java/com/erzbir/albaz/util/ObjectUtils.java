@@ -8,6 +8,9 @@ import java.nio.charset.Charset;
 import java.time.ZoneId;
 import java.util.*;
 
+/**
+ * ref : spring
+ */
 public abstract class ObjectUtils {
 
     private static final String EMPTY_STRING = "";

@@ -4,6 +4,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.Serial;
 
+/**
+ * ref : spring
+ */
 public abstract class NestedRuntimeException extends RuntimeException {
 
     @Serial

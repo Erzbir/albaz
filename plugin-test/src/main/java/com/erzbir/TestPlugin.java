@@ -7,7 +7,10 @@ public class TestPlugin extends JavaPlugin {
     public static TestPlugin INSTANCE = new TestPlugin();
 
     public TestPlugin() {
-        super(new PluginDescription.Builder("test", "0.0.1").build());
+        super(new PluginDescription.Builder("test", "0.0.1")
+                .author("Erzbir")
+                .desc("this is a test")
+                .build());
     }
 
     @Override

@@ -1,14 +1,10 @@
 package com.erzbir.albaz.plugin;
 
-import lombok.Getter;
-import lombok.Setter;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-@Setter
-@Getter
 public class PluginDescription {
     private String id;
     private String name;
@@ -26,6 +22,46 @@ public class PluginDescription {
 
     public PluginDescription(String id, String version) {
         this.id = id;
+        this.version = version;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getDesc() {
+        return desc;
+    }
+
+    public void setDesc(String desc) {
+        this.desc = desc;
+    }
+
+    public String getAuthor() {
+        return author;
+    }
+
+    public void setAuthor(String author) {
+        this.author = author;
+    }
+
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
         this.version = version;
     }
 

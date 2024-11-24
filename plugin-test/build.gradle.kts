@@ -9,5 +9,5 @@ dependencies {
 }
 
 tasks.withType<JavaExec> {
-    jvmArgs("--illegal-access=deny")
+
 }

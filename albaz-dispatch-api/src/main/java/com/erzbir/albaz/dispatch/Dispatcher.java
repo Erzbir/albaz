@@ -6,7 +6,5 @@ package com.erzbir.albaz.dispatch;
  * @since 1.0.0
  */
 public interface Dispatcher {
-    DispatcherConfiguration getConfiguration();
-
     EventDispatcher getEventDispatcher();
 }

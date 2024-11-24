@@ -15,6 +15,10 @@ public interface Context extends View {
         return ContextEmpty.INSTANCE;
     }
 
+    static Context contextN() {
+        return new MapContext();
+    }
+
     Context put(Object key, Object value);
 
     default View readOnly() {

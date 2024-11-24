@@ -6,6 +6,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.net.*;
 
+/**
+ * ref : spring
+ */
 public abstract class ResourceUtils {
 
     /**

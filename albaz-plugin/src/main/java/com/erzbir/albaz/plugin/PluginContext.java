@@ -1,7 +1,6 @@
 package com.erzbir.albaz.plugin;
 
 import com.erzbir.albaz.common.Context;
-import com.erzbir.albaz.common.ContextDelegate;
 
 import java.util.Map;
 import java.util.stream.Stream;
@@ -11,7 +10,15 @@ import java.util.stream.Stream;
  * @since 1.0.0
  */
 public class PluginContext implements Context {
-    private final ContextDelegate contextDelegate = new ContextDelegate();
+    private final Context contextDelegate;
+
+    public PluginContext() {
+        this.contextDelegate = Context.empty();
+    }
+
+    public PluginContext(Context context) {
+        this.contextDelegate = context;
+    }
 
     @Override
     public Context put(Object key, Object value) {

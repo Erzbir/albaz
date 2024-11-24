@@ -24,6 +24,9 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.function.Supplier;
 
+/**
+ * ref spring
+ */
 public abstract class Assert {
 
     @Contract("false, _ -> fail")

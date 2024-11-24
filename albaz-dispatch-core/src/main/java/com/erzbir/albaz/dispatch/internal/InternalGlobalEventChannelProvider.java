@@ -8,9 +8,9 @@ import com.erzbir.albaz.dispatch.GlobalEventChannelProvider;
  * @author Erzbir
  * @since 1.0.0
  */
-public class InternalGlobalEventChannelProvider implements GlobalEventChannelProvider {
+public final class InternalGlobalEventChannelProvider implements GlobalEventChannelProvider {
     @Override
     public EventChannel<Event> getInstance() {
-        return GlobalEventChannel.INSTANCE;
+        return InternalGlobalEventChannel.INSTANCE;
     }
 }

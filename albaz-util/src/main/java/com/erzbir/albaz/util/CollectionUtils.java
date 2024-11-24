@@ -5,6 +5,9 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
 
+/**
+ * ref spring
+ */
 public abstract class CollectionUtils {
 
     static final float DEFAULT_LOAD_FACTOR = 0.75f;

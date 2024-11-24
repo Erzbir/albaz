@@ -1,14 +1,14 @@
 package com.erzbir.albaz.plugin;
 
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.exception.PluginUnloadException;
 import com.erzbir.albaz.plugin.internal.InternalJarPluginLoader;
 import com.erzbir.albaz.plugin.internal.InternalSpiPluginLoader;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
 import java.util.WeakHashMap;
 
@@ -26,18 +26,18 @@ import java.util.WeakHashMap;
  * @see Plugin
  * @since 1.0.0
  */
-@Slf4j
 public class PluginManager {
     public static final PluginManager INSTANCE = new PluginManager();
     private final static String PLUGIN_DIR = "plugins";
-    private final Map<String, WeakReference<PluginHandle>> plugins = new WeakHashMap<>();
+    private final Log log = LogFactory.getLog(PluginManager.class);
+    private final Map<String, WeakReference<PluginHandle>> plugins = Collections.synchronizedMap(new WeakHashMap<>());
     private boolean isServiceLoad = true;
 
     private PluginManager() {
 
     }
 
-    public void isServiceLoad(boolean isServiceLoad) {
+    public void useServiceLoader(boolean isServiceLoad) {
         this.isServiceLoad = isServiceLoad;
     }
 
@@ -48,20 +48,12 @@ public class PluginManager {
     public void loadPlugins(String pluginDir) {
         File[] jars = new File(pluginDir).listFiles((dir, name) -> name.endsWith(".jar"));
         if (jars == null) {
-            log.warn("No plugins found in {}", pluginDir);
+            log.warn("No plugins found in " + pluginDir);
             return;
         }
-        List<Thread> threads = new ArrayList<>();
         for (File jar : jars) {
-            threads.add(Thread.ofVirtual().start(() -> loadPlugin(jar)));
+            loadPlugin(jar);
         }
-        threads.forEach(thread -> {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                log.warn("Interrupted while waiting for plugins to load", e);
-            }
-        });
     }
 
 
@@ -74,27 +66,30 @@ public class PluginManager {
                 pluginLoader = new InternalJarPluginLoader();
             }
             Plugin plugin = pluginLoader.load(file);
-            PluginHandle pluginHandle = new PluginHandle(plugin, file, pluginLoader);
+            if (plugin == null) {
+                return;
+            }
             PluginDescription description = plugin.getDescription();
             if (plugins.containsKey(description.getId())) {
-                log.warn("Plugin {} already loaded", plugin.getDescription().getId());
+                log.warn("Plugin " + plugin.getDescription().getId() + " already loaded");
                 unloadPlugin(description.getId());
                 loadPlugin(file);
                 return;
             }
+            PluginHandle pluginHandle = new PluginHandle(plugin, file, pluginLoader);
             plugins.put(description.getId(), new WeakReference<>(pluginHandle));
-            Thread.ofVirtual().start(plugin::onLoad);
+            plugin.onLoad();
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    public void reloadPlugins() {
+    public void reloadPlugins() throws PluginUnloadException {
         unloadPlugins();
         loadPlugins();
     }
 
-    public void reloadPlugin(String pluginId) {
+    public void reloadPlugin(String pluginId) throws PluginUnloadException {
         File pluginFile = plugins.get(pluginId).get().getFile();
         unloadPlugin(pluginId);
         loadPlugin(pluginFile);
@@ -112,30 +107,21 @@ public class PluginManager {
         plugins.get(pluginId).get().getPlugin().disable();
     }
 
-
     public void disablePlugins() {
         plugins.forEach((k, v) -> disablePlugin(k));
     }
 
-    public void unloadPlugins() {
-        plugins.forEach((k, v) -> unloadPlugin(k));
+    public void unloadPlugins() throws PluginUnloadException {
+        for (String pluginId : plugins.keySet()) {
+            unloadPlugin(pluginId);
+        }
     }
 
-    public void unloadPlugin(String pluginId) {
+    public void unloadPlugin(String pluginId) throws PluginUnloadException {
         PluginHandle pluginHandle = plugins.get(pluginId).get();
-        Thread.ofVirtual().start(() -> pluginHandle.getPlugin().onUnLoad());
-        Thread.ofVirtual().start(() -> {
-            try {
-                pluginHandle.destroy();
-            } catch (PluginUnloadException e) {
-                log.error(e.getMessage(), e);
-            }
-        });
-        Thread.ofVirtual().start(() -> plugins.remove(pluginId));
-    }
-
-    public List<Plugin> getPlugins() {
-        return plugins.values().stream().map(weak -> weak.get().getPlugin()).toList();
+        pluginHandle.getPlugin().onUnLoad();
+        pluginHandle.destroy();
+        plugins.remove(pluginId);
     }
 
     public int size() {

@@ -2,54 +2,69 @@ package com.erzbir.albaz.dispatch.internal;
 
 
 import com.erzbir.albaz.dispatch.*;
-import lombok.extern.slf4j.Slf4j;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 import java.lang.ref.WeakReference;
-import java.lang.reflect.Field;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.WeakHashMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
+ * <p>
+ * 事件通道的内部实现
+ * </p>
+ *
  * @author Erzbir
+ * @see EventChannel
+ * @see Event
+ * @see Listener
+ * @see ListenerStatus
+ * @see ListenerRegistry
  * @since 1.0.0
  */
-@Slf4j
 class EventChannelImpl<E extends Event> extends EventChannel<E> {
-    // 为了避免监听器逻辑中出现阻塞, 从而导致监听无法取消
+    protected final Map<Listener<?>, ListenerRegistry> listeners = new ConcurrentHashMap<>();
+    private final Log log = LogFactory.getLog(getClass());
     private final Map<Listener<?>, Thread> taskMap = new WeakHashMap<>();
-    protected List<ListenerDescription> listeners = new ArrayList<>();
     protected ListenerInvoker listenerInvoker = new ListenerInvokers.InterceptorInvoker();
 
     public EventChannelImpl(Class<E> baseEventClass) {
         super(baseEventClass);
     }
 
-    @SuppressWarnings({"unchecked"})
     @Override
-    public void broadcast(EventContext eventContext) {
-        Event event = eventContext.getEvent();
+    public void broadcast(Event event) {
         if (!(event instanceof AbstractEvent)) throw new IllegalArgumentException("Event must extend AbstractEvent");
         if (event.isIntercepted()) {
-            log.debug("Event: {} was truncated, cancel broadcast", event);
+            log.debug("Event: {" + event + "} was truncated, cancel broadcast");
             return;
         }
-        callListeners((E) event);
+        if (listeners.isEmpty()) {
+            log.debug("EventChannel: " + getClass().getSimpleName() + " has no listeners, broadcasting canceled");
+        }
+        callListeners((AbstractEvent) event);
     }
 
-    @SuppressWarnings({"unchecked"})
-    public ListenerHandle registerListener(Class<E> eventType, Listener<E> listener) {
-        Listener<E> safeListener = createSafeListener(listener);
-        listeners.add(new ListenerDescription((Class<Event>) eventType, safeListener));
-        return new WeakReferenceListenerHandle(listener, listeners, createHandleHook(safeListener));
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Override
+    public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
+        SafeListener safeListener = createSafeListener((Listener<E>) listener);
+        listeners.put(safeListener, new ListenerRegistry((Class) eventType, safeListener));
+        return new WeakReferenceListenerHandle(safeListener, listeners.values(), createHandleHook(safeListener));
     }
 
     @SuppressWarnings({"unchecked"})
     @Override
-    public <T extends E> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerResult> handle) {
-        Listener<E> listener = createListener((Function<E, ListenerResult>) handle);
+    public <T extends E> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerStatus> handle) {
+        Listener<E> listener = createListener((Function<E, ListenerStatus>) handle);
         return registerListener((Class<E>) eventType, listener);
     }
 
@@ -57,7 +72,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     public <T extends E> ListenerHandle subscribeOnce(Class<T> eventType, Consumer<T> handle) {
         return subscribe(eventType, event -> {
             handle.accept(event);
-            return StandardListenerResult.STOP;
+            return ListenerStatus.STOP;
         });
     }
 
@@ -65,91 +80,99 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     public <T extends E> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle) {
         return subscribe(eventType, event -> {
             handle.accept(event);
-            return StandardListenerResult.CONTINUE;
+            return ListenerStatus.CONTINUE;
         });
     }
 
-
     @Override
-    public Listener<E> createListener(Function<E, ListenerResult> handle) {
+    public Listener<E> createListener(Function<E, ListenerStatus> handle) {
         return createSafeListener(handle::apply);
     }
 
-
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public EventChannel<E> filter(Predicate<Event> predicate) {
-        return new FilterEventChannel<>(this, predicate);
+    public EventChannel<E> filter(Predicate<? extends E> predicate) {
+        return new FilterEventChannel(this, predicate);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public <T extends E> EventChannel<T> filterInstance(Class<T> eventType) {
-        FilterEventChannel filterEventChannel = new FilterEventChannel(this, eventType);
-        try {
-            Field baseEventClass = filterEventChannel.getClass().getSuperclass().getDeclaredField("baseEventClass");
-            baseEventClass.setAccessible(true);
-            baseEventClass.set(filterEventChannel, eventType);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            log.error(e.getMessage(), e);
-        }
-        return filterEventChannel;
+        return new FilterEventChannel(this, eventType);
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Iterable<Listener<E>> getListeners() {
-        return (Iterable) listeners.stream().map(ListenerDescription::listener).toList();
+        return (Iterable) listeners.values().stream().map(ListenerRegistry::listener).toList();
     }
 
-    private void callListeners(E event) {
-        for (ListenerDescription listenerDescription : listeners) {
-            if (!listenerDescription.eventType().isInstance(event)) {
+    private void callListeners(AbstractEvent event) {
+        for (ListenerRegistry listenerRegistry : listeners.values()) {
+            if (!listenerRegistry.eventType().isInstance(event)) {
                 continue;
             }
-            process(listenerDescription, event);
+            process(listenerRegistry, event);
         }
     }
 
-    private Listener<E> createSafeListener(Listener<E> listener) {
+    private SafeListener createSafeListener(Listener<E> listener) {
         if (listener instanceof SafeListener) {
-            return listener;
+            return (SafeListener) listener;
         }
         return new SafeListener(listener);
     }
 
-    private boolean interceptProcess(ListenerContext listenerContext) {
-        InterceptProcessor interceptProcessor = new DefaultInterceptProcessor();
-        return interceptProcessor.intercept(listenerContext, interceptors);
+    private boolean interceptProcess(Listener<E> listener) {
+        InterceptProcessor interceptProcessor = new InternalInterceptProcessor();
+        return interceptProcessor.intercept(listener, interceptors);
     }
 
-
-    private void process(ListenerDescription listenerDescription, E event) {
-        Listener<?> listener = listenerDescription.listener();
-        log.debug("Broadcasting event: {} to listener: {}", event, listener.getClass().getSimpleName());
-        if (!interceptProcess(new DefaultListenerContext(new DefaultEventContext(event), listener))) {
+    /**
+     * <p>
+     * 在 {@link Listener.ConcurrencyKind#CONCURRENT} 模式下会并发执行监听执行器. {@link Listener.ConcurrencyKind#LOCKED} 模式下则是加锁同步, 会阻塞当前的分发线程
+     * </p>
+     *
+     * @param listenerRegistry 监听器注册表
+     * @param event            触发监听的事件
+     * @see Listener.ConcurrencyKind
+     */
+    @SuppressWarnings({"unchecked"})
+    private void process(ListenerRegistry listenerRegistry, AbstractEvent event) {
+        SafeListener listener = (SafeListener) listenerRegistry.listener();
+        String name = listener.delegate.getClass().getSimpleName();
+        log.debug("Broadcasting event: " + event + " to listener: " + (name.isEmpty() ? listener.delegate.getClass().getName() : name));
+        ;
+        if (!interceptProcess(listener)) {
             return;
         }
+        Runnable invokeRunnable = createInvokeRunnable(event, listener);
         Thread invokeThread = Thread.ofVirtual()
-                .name("Listener-Invoke-Thread")
-                .unstarted(createInvokeRunnable(event, listener));
-        invokeThread.start();
+                .name("Listener-Invoke-Thread-" + Thread.currentThread().threadId())
+                .start(invokeRunnable);
         taskMap.put(listener, invokeThread);
     }
 
-    private Runnable createInvokeRunnable(E event, Listener<?> listener) {
+    @SuppressWarnings({"unchecked"})
+    private Runnable createInvokeRunnable(AbstractEvent event, Listener<?> listener) {
         return () -> {
             try {
-                if (!activated.get()) {
-                    Thread.currentThread().interrupt();
-                    return;
+                SafeListener safeListener = (SafeListener) listener;
+                ReentrantLock lock = safeListener.lock;
+                if (lock != null) {
+                    lock.lock();
                 }
-                ListenerResult listenerResult = listenerInvoker.invoke(new DefaultListenerContext(new DefaultEventContext(event), listener));
-                if (!listenerResult.isContinue()) {
-                    Thread.currentThread().interrupt();
+                ListenerStatus listenerStatus = listenerInvoker.invoke(new InvokerContext(event, listener));
+                if (lock != null) {
+                    lock.unlock();
                 }
+                if (listenerStatus == ListenerStatus.STOP) {
+                    safeListener.inactive();
+                    listeners.remove(listener);
+                }
+
             } catch (Throwable e) {
-                log.error("Calling listener error: {}", e.getMessage());
-                Thread.currentThread().interrupt();
+                log.error("Calling listener error: " + e.getMessage());
             }
         };
     }
@@ -164,30 +187,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         };
     }
 
-//    @SuppressWarnings({"unchecked"})
-//    @Override
-//    public <T extends Event> ListenerHandle register(Class<T> eventType, Listener<T> listener) {
-//        return registerListener((Class<E>) eventType, (Listener<E>) listener);
-//    }
-
-    public class SafeListener implements Listener<E> {
-        private final Listener<E> delegate;
-
-        public SafeListener(Listener<E> delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public ListenerResult onEvent(E event) {
-            try {
-                return delegate.onEvent(event);
-            } catch (Exception e) {
-                return StandardListenerResult.STOP;
-            }
-        }
-    }
-
-    abstract class HookableHandle implements ListenerHandle {
+    abstract static class HookableHandle implements ListenerHandle {
         protected Runnable hook;
 
         public HookableHandle(Runnable hook) {
@@ -203,13 +203,13 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         private final AtomicBoolean disposed = new AtomicBoolean(false);
 
         private final int index;
-        private final List<Listener<?>> listeners;
+        private final List<SafeListener> listeners;
 
-        public IndexListenerHandle(int index, List<Listener<?>> listeners) {
+        public IndexListenerHandle(int index, List<SafeListener> listeners) {
             this(index, listeners, null);
         }
 
-        public IndexListenerHandle(int index, List<Listener<?>> listeners, Runnable hook) {
+        public IndexListenerHandle(int index, List<SafeListener> listeners, Runnable hook) {
             super(hook);
             this.index = index;
             this.listeners = listeners;
@@ -220,7 +220,8 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             if (!disposed.compareAndSet(false, true)) {
                 return;
             }
-            listeners.remove(index);
+            SafeListener remove = listeners.remove(index);
+            remove.inactive();
             hook.run();
         }
 
@@ -232,14 +233,14 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
 
     class WeakReferenceListenerHandle extends HookableHandle implements ListenerHandle {
         private final AtomicBoolean disposed = new AtomicBoolean(false);
-        private WeakReference<Listener<?>> listenerRef;
-        private WeakReference<Collection<ListenerDescription>> collectionRef;
+        private WeakReference<SafeListener> listenerRef;
+        private WeakReference<Collection<ListenerRegistry>> collectionRef;
 
-        public WeakReferenceListenerHandle(Listener<?> listener, Collection<ListenerDescription> collection) {
+        public WeakReferenceListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection) {
             this(listener, collection, null);
         }
 
-        public WeakReferenceListenerHandle(Listener<?> listener, Collection<ListenerDescription> collection, Runnable hook) {
+        public WeakReferenceListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection, Runnable hook) {
             super(hook);
             this.listenerRef = new WeakReference<>(listener);
             this.collectionRef = new WeakReference<>(collection);
@@ -251,11 +252,12 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             if (!disposed.compareAndSet(false, true)) {
                 return;
             }
-            Collection<ListenerDescription> collection = collectionRef.get();
+            Collection<ListenerRegistry> collection = collectionRef.get();
             if (collection != null) {
-                Listener<?> listener = listenerRef.get();
+                SafeListener listener = listenerRef.get();
                 if (listener != null) {
-                    collection.removeIf(listenerDescription -> listenerDescription.listener().equals(listener));
+                    listener.inactive();
+                    collection.removeIf(listenerRegistry -> listenerRegistry.listener().equals(listener));
                 }
             }
             listenerRef = null;
@@ -269,7 +271,82 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         }
     }
 
+    /**
+     * <p>
+     * 一个安全监听器, 通过 {@link EventChannel} 注册的所有监听, 最终都会被包装成此类对象. 捕获所有异常.
+     * </p>
+     *
+     * <p>
+     * 这个类实现了 {@link  ConcurrencyKind}, 在执行真正的监听回调之前会检查标志位 {@link  #active}, 判断是否要执行.
+     * 这个标志位 {@link #active} 会在监听器返回 {@link  ListenerStatus#STOP} 时被置为 {@code false}.
+     * </p>
+     *
+     * @see Listener
+     * @see ConcurrencyKind
+     * @see ListenerStatus
+     */
+    class SafeListener implements Listener<E> {
+        private final Log log;
+        private final Listener<E> delegate;
+        private final AtomicBoolean active = new AtomicBoolean(true);
+        private final AtomicBoolean truncated = new AtomicBoolean(false);
+        /**
+         * 在 {@link  ConcurrencyKind#LOCKED} 模式下, 这个锁会初始化赋值
+         */
+        private ReentrantLock lock;
 
+
+        public SafeListener(Listener<E> delegate) {
+            this.delegate = delegate;
+            log = LogFactory.getLog(delegate.getClass());
+            switch (concurrencyKind()) {
+                case CONCURRENT -> lock = null;
+                case LOCKED -> lock = new ReentrantLock();
+            }
+        }
+
+        /**
+         * 仅内部使用, 在需要的时候可以直接通过此方法设置标志位
+         */
+        void inactive() {
+            active.set(false);
+        }
+
+        /**
+         * 仅内部使用, 在需要的时候可以直接通过此方法设置标志位
+         */
+        void truncate() {
+            truncated.set(true);
+        }
+
+        @Override
+        public ConcurrencyKind concurrencyKind() {
+            return delegate.concurrencyKind();
+        }
+
+        @Override
+        public ListenerStatus onEvent(E event) {
+            if (Thread.currentThread().isInterrupted()) {
+                return ListenerStatus.STOP;
+            }
+            if (!active.get()) {
+                return ListenerStatus.STOP;
+            }
+            try {
+                ListenerStatus listenerStatus = delegate.onEvent(event);
+                switch (listenerStatus) {
+                    case ListenerStatus.Status.STOP -> active.set(false);
+                    case ListenerStatus.Status.TRUNCATED -> truncated.set(true);
+                    default -> {
+                    }
+                }
+                return listenerStatus;
+            } catch (Throwable e) {
+                log.error("Calling listener error: " + e.getMessage());
+                return ListenerStatus.TRUNCATED;
+            }
+        }
+    }
 }
 
 

@@ -5,8 +5,6 @@ import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.PluginLoader;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
 import com.erzbir.albaz.plugin.exception.PluginLoadException;
-import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -25,8 +23,9 @@ import java.util.jar.JarFile;
  * @see PluginLoader
  * @since 1.0.0
  */
-@Slf4j
 public class InternalJarPluginLoader extends AbstractPluginLoader implements PluginLoader {
+    protected final static String SERVICE_PATH = "META-INF/services/com.erzbir.albaz.plugin.Plugin";
+
     @Override
     public Plugin load(File file) throws PluginLoadException {
         if (!file.isFile() || !file.getName().endsWith(".jar") || !file.canRead()) {
@@ -68,9 +67,7 @@ public class InternalJarPluginLoader extends AbstractPluginLoader implements Plu
                     return (Plugin) instance;
                 }
             }
-        } catch (NoSuchFieldException e) {
-            throw new PluginNotFoundException(e);
-        } catch (ClassNotFoundException | IllegalAccessException | IOException e1) {
+        } catch (ClassNotFoundException | IllegalAccessException | NoSuchFieldException | IOException e1) {
             throw new PluginIllegalException(e1);
         }
         return null;

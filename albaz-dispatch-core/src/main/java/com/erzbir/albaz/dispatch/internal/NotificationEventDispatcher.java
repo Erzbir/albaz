@@ -4,10 +4,8 @@ import com.erzbir.albaz.dispatch.CancelableEvent;
 import com.erzbir.albaz.dispatch.Event;
 import com.erzbir.albaz.dispatch.EventChannel;
 import com.erzbir.albaz.dispatch.EventDispatcher;
-import lombok.extern.slf4j.Slf4j;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 /**
  * 基于通知的 {@link EventDispatcher}
@@ -15,16 +13,14 @@ import java.util.List;
  * @author Erzbir
  * @since 1.0.0
  */
-@Slf4j
-public class NotificationEventDispatcher extends AbstractEventDispatcher implements EventDispatcher {
-    private final List<Thread> threads = new ArrayList<>();
+public final class NotificationEventDispatcher extends AbstractEventDispatcher implements EventDispatcher {
+    private final Log log = LogFactory.getLog(NotificationEventDispatcher.class);
 
     @Override
     protected <E extends Event> void dispatchTo(E event, EventChannel<E> channel) {
-        Thread thread = Thread.ofVirtual()
-                .name("Dispatcher-Thread")
+        Thread.ofVirtual()
+                .name("Dispatcher-Thread-" + Thread.currentThread().threadId())
                 .start(createTask(channel, event));
-        threads.add(thread);
     }
 
     private <E extends Event> Runnable createTask(EventChannel<E> channel, E event) {
@@ -35,29 +31,21 @@ public class NotificationEventDispatcher extends AbstractEventDispatcher impleme
                         return;
                     }
                 }
-                log.debug("Dispatching event: {} to channel: {}", event, channel.getClass().getSimpleName());
-                channel.broadcast(new DefaultEventContext(event));
+                log.debug("Dispatching event:" + event + " to channel: " + channel.getClass().getSimpleName());
+                channel.broadcast(event);
             } catch (Throwable e) {
-                log.error("Dispatching to channel: {} error: {}", channel.getClass().getSimpleName(), e.getMessage());
-                Thread.currentThread().interrupt();
+                log.error("Dispatching to channel: " + channel.getClass().getSimpleName() + " error: " + e.getMessage());
             }
         };
     }
 
     @Override
     public void join() {
-        threads.forEach(thread -> {
-            try {
-                thread.join();
-            } catch (InterruptedException e) {
-                log.error("Dispatching interrupted error: {}", e.getMessage());
-            }
-        });
+
     }
 
     @Override
     public void cancel() {
         super.cancel();
-        threads.clear();
     }
 }

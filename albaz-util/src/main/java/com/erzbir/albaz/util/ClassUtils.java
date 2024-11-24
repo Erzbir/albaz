@@ -20,6 +20,9 @@ import java.time.temporal.Temporal;
 import java.util.*;
 import java.util.regex.Pattern;
 
+/**
+ * ref spring
+ */
 public abstract class ClassUtils {
 
     public static final String ARRAY_SUFFIX = "[]";

@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 class InternalJarPluginLoaderTest {
     String file = "plugins/plugin-test-1.0.0-all.jar";
 

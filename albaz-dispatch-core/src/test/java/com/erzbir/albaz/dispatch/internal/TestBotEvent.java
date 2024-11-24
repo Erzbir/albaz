@@ -5,7 +5,7 @@ import com.erzbir.albaz.dispatch.AbstractEvent;
 
 /**
  * @author Erzbir
- * @Data: 2024/2/14 02:19
+ * @since 1.0.0
  */
 public class TestBotEvent extends AbstractEvent implements BotEvent {
     public TestBotEvent(Object source) {

@@ -1,8 +1,7 @@
 package com.erzbir.albaz.util;
 
 /**
- * @author erzbir
- * @since 1.0.0
+ * ref : spring
  */
 public class ProxyUtils {
 

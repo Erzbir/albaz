@@ -21,8 +21,6 @@ import java.io.IOException;
  * @since 1.0.0
  */
 public interface PluginLoader {
-    String SERVICE_PATH = "META-INF/services/com.erzbir.albaz.plugin.Plugin";
-
     Plugin load(File file) throws PluginLoadException;
 
     void close() throws IOException;

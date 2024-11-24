@@ -1,9 +1,9 @@
 package com.erzbir.albaz.dispatch.internal;
 
 
-import com.erzbir.albaz.dispatch.ListenerContext;
+import com.erzbir.albaz.dispatch.InvokerContext;
 import com.erzbir.albaz.dispatch.ListenerInvoker;
-import com.erzbir.albaz.interceptor.Interceptor;
+import com.erzbir.albaz.common.Interceptor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,10 +13,10 @@ import java.util.List;
  * @since 1.0.0
  */
 public abstract class AbstractListenerInvoker implements ListenerInvoker {
-    protected final List<Interceptor<ListenerContext>> interceptors = new ArrayList<>();
+    protected final List<Interceptor<InvokerContext>> interceptors = new ArrayList<>();
 
     @Override
-    public void addInterceptor(Interceptor<ListenerContext> interceptor) {
+    public void addInterceptor(Interceptor<InvokerContext> interceptor) {
         interceptors.add(interceptor);
     }
 }

@@ -1,9 +1,6 @@
-plugins {
-    id("java")
-}
-
 dependencies {
     implementation(project(":albaz-common"))
+    implementation(project(":albaz-jcl"))
 }
 
 tasks.withType<JavaExec> {
@@ -16,5 +13,5 @@ tasks.register<JavaExec>("Hot Load Debug") {
 
 tasks.test {
     useJUnitPlatform()
-//    jvmArgs("-verbose:class")
+    jvmArgs("-verbose:class")
 }

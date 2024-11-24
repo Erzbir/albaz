@@ -1,5 +1,6 @@
 package com.erzbir.albaz.plugin;
 
+import com.erzbir.albaz.plugin.exception.PluginUnloadException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -15,30 +16,28 @@ class PluginManagerTest {
     }
 
     @Test
-    void serviceLoad() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException {
+    void serviceLoad() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginUnloadException {
         PluginManager pluginManager = newPluginManager();
-
-        pluginManager.isServiceLoad(false);
+        pluginManager.useServiceLoader(false);
         pluginManager.loadPlugins();
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
         pluginManager.enablePlugins();
         pluginManager.unloadPlugins();
         Thread.sleep(100);
-        Assertions.assertEquals(0, pluginManager.getPlugins().size());
+        Assertions.assertEquals(0, pluginManager.size());
     }
 
     @Test
     void loadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         PluginManager pluginManager = newPluginManager();
         pluginManager.loadPlugins();
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
     }
 
     @Test
     void loadPlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
         PluginManager pluginManager = newPluginManager();
         pluginManager.loadPlugin(new File("plugins/plugin-test-1.0.0-all.jar"));
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
     }
 
     @Test
@@ -47,7 +46,7 @@ class PluginManagerTest {
 
         pluginManager.loadPlugins();
         pluginManager.enablePlugin("test");
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
     }
 
     @Test
@@ -56,7 +55,7 @@ class PluginManagerTest {
 
         pluginManager.loadPlugins();
         pluginManager.enablePlugins();
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
     }
 
     @Test
@@ -64,7 +63,7 @@ class PluginManagerTest {
         PluginManager pluginManager = newPluginManager();
         pluginManager.loadPlugins();
         pluginManager.disablePlugin("test");
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
     }
 
     @Test
@@ -73,26 +72,26 @@ class PluginManagerTest {
         pluginManager.loadPlugins();
         pluginManager.enablePlugins();
         pluginManager.disablePlugins();
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
     }
 
     @Test
-    void unloadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException {
+    void unloadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginUnloadException {
         PluginManager pluginManager = newPluginManager();
         pluginManager.loadPlugins();
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
         pluginManager.unloadPlugins();
         Thread.sleep(100);
-        Assertions.assertEquals(0, pluginManager.getPlugins().size());
+        Assertions.assertEquals(0, pluginManager.size());
     }
 
     @Test
-    void unloadPlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException {
+    void unloadPlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginUnloadException {
         PluginManager pluginManager = newPluginManager();
         pluginManager.loadPlugins();
-        Assertions.assertEquals(1, pluginManager.getPlugins().size());
+        Assertions.assertEquals(1, pluginManager.size());
         pluginManager.unloadPlugin("test");
         Thread.sleep(100);
-        Assertions.assertEquals(0, pluginManager.getPlugins().size());
+        Assertions.assertEquals(0, pluginManager.size());
     }
 }

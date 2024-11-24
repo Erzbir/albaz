@@ -9,26 +9,26 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @since 1.0.0
  */
-public class GlobalEventChannel extends EventChannel<Event> {
+public final class GlobalEventChannel extends EventChannel<Event> {
     public final static GlobalEventChannel INSTANCE = new GlobalEventChannel();
-    private EventChannel<Event> delegate = ServiceLoader.load(GlobalEventChannelProvider.class).iterator().next().getInstance();
+    private final EventChannel<Event> delegate = ServiceLoader.load(GlobalEventChannelProvider.class).iterator().next().getInstance();
 
     private GlobalEventChannel() {
         super(Event.class);
     }
 
     @Override
-    public void broadcast(EventContext event) {
+    public void broadcast(Event event) {
         delegate.broadcast(event);
     }
 
     @Override
-    public ListenerHandle registerListener(Class<Event> eventType, Listener<Event> listener) {
+    public <T extends Event> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         return delegate.registerListener(eventType, listener);
     }
 
     @Override
-    public <T extends Event> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerResult> handle) {
+    public <T extends Event> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerStatus> handle) {
         return delegate.subscribe(eventType, handle);
     }
 
@@ -43,12 +43,12 @@ public class GlobalEventChannel extends EventChannel<Event> {
     }
 
     @Override
-    public Listener<Event> createListener(Function<Event, ListenerResult> handle) {
+    public Listener<Event> createListener(Function<Event, ListenerStatus> handle) {
         return delegate.createListener(handle);
     }
 
     @Override
-    public EventChannel<Event> filter(Predicate<Event> predicate) {
+    public EventChannel<Event> filter(Predicate<? extends Event> predicate) {
         return delegate.filter(predicate);
     }
 
@@ -61,9 +61,4 @@ public class GlobalEventChannel extends EventChannel<Event> {
     public Iterable<Listener<Event>> getListeners() {
         return delegate.getListeners();
     }
-
-//    @Override
-//    public <T extends Event> ListenerHandle register(Class<T> eventType, Listener<T> listener) {
-//        return delegate.register(eventType, listener);
-//    }
 }

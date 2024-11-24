@@ -38,7 +38,7 @@ class CallbackInfo {
         type = Type.getType(cls);
     }
 
-    //////////////////// PRIVATE ////////////////////
+    /// ///////////////// PRIVATE ////////////////////
 
     public static Type[] determineTypes(Class[] callbackTypes) {
         return determineTypes(callbackTypes, true);

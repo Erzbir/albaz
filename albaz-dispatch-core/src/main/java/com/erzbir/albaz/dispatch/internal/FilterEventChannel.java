@@ -10,7 +10,7 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @since 1.0.0
  */
-class FilterEventChannel<E extends Event> extends EventChannel<E> {
+final class FilterEventChannel<E extends Event> extends EventChannel<E> {
     private final EventChannel<E> delegate;
     private final Predicate<Event> filter;
 
@@ -20,27 +20,28 @@ class FilterEventChannel<E extends Event> extends EventChannel<E> {
         this.filter = filter;
     }
 
+
     public FilterEventChannel(EventChannel<E> delegate, Class<E> eventType) {
         this(delegate, eventType::isInstance);
+        this.baseEventClass = eventType;
     }
 
 
     @Override
-    public void broadcast(EventContext eventContext) {
-        Event event = eventContext.getEvent();
+    public void broadcast(Event event) {
         if (!baseEventClass.isInstance(event) && filter.test(event)) {
             return;
         }
-        delegate.broadcast(eventContext);
+        delegate.broadcast(event);
     }
 
     @Override
-    public ListenerHandle registerListener(Class<E> eventType, Listener<E> listener) {
+    public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         return delegate.registerListener(eventType, intercept(listener));
     }
 
     @Override
-    public <T extends E> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerResult> handler) {
+    public <T extends E> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerStatus> handler) {
         return delegate.subscribe(eventType, intercept(handler));
     }
 
@@ -55,7 +56,7 @@ class FilterEventChannel<E extends Event> extends EventChannel<E> {
     }
 
     @Override
-    public Listener<E> createListener(Function<E, ListenerResult> handler) {
+    public Listener<E> createListener(Function<E, ListenerStatus> handler) {
         return delegate.createListener(intercept(handler));
     }
 
@@ -66,19 +67,25 @@ class FilterEventChannel<E extends Event> extends EventChannel<E> {
             if (filterResult) {
                 return listener.onEvent(ev);
             } else {
-                return StandardListenerResult.TRUNCATED;
+                return ListenerStatus.TRUNCATED;
             }
         };
     }
 
+    /**
+     * 这里重写了父类是为了形成一条链, 因为从一个 {@link FilterEventChannel} 过滤的通道, {@link #delegate} 就必须是原本的 {@link FilterEventChannel}.
+     * 父类实现的方法只是为每一个通道都提供一个可以过滤得到 {@link FilterEventChannel} 的方式.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public EventChannel<E> filter(Predicate<Event> predicate) {
-        return delegate.filter(predicate);
+    public EventChannel<E> filter(Predicate<? extends E> predicate) {
+        return new FilterEventChannel(this, predicate);
     }
 
+    @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public <T extends E> EventChannel<T> filterInstance(Class<T> eventType) {
-        return delegate.filterInstance(eventType);
+        return new FilterEventChannel(this, eventType);
     }
 
     @Override
@@ -96,14 +103,14 @@ class FilterEventChannel<E extends Event> extends EventChannel<E> {
         };
     }
 
-    private <T extends E> Function<T, ListenerResult> intercept(Function<T, ListenerResult> handler) {
+    private <T extends E> Function<T, ListenerStatus> intercept(Function<T, ListenerStatus> handler) {
         return (ev) -> {
             boolean filterResult;
             filterResult = getBaseEventClass().isInstance(ev) && filter.test(ev);
             if (filterResult) {
                 return handler.apply(ev);
             } else {
-                return StandardListenerResult.TRUNCATED;
+                return ListenerStatus.TRUNCATED;
             }
         };
     }

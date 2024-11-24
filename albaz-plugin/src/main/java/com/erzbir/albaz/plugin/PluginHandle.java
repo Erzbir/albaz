@@ -1,7 +1,8 @@
 package com.erzbir.albaz.plugin;
 
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.exception.PluginUnloadException;
-import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
 import java.lang.ref.WeakReference;
@@ -14,8 +15,8 @@ import java.lang.ref.WeakReference;
  * @author Erzbir
  * @since 1.0.0
  */
-@Slf4j
 public class PluginHandle {
+    private final Log log = LogFactory.getLog(PluginHandle.class);
     private WeakReference<PluginLoader> pluginLoader;
     private WeakReference<Plugin> plugin;
     private WeakReference<File> file;
@@ -42,7 +43,7 @@ public class PluginHandle {
         try {
             pluginLoader.get().close();
         } catch (Throwable e) {
-            log.error("Failed to close URLClassLoader", e);
+            log.error("Failed to close ClassLoader", e);
             throw new PluginUnloadException(e);
         }
         file.enqueue();

@@ -1,10 +1,6 @@
-plugins {
-    id("java")
-}
-
 dependencies {
-    api(project(":albaz-di"))
-    api(project(":albaz-dispatch"))
-    api(project(":albaz-plugin"))
-    api(project(":albaz-common"))
+    implementation(project(":albaz-context"))
+    implementation(project(":albaz-dispatch"))
+    implementation(project(":albaz-plugin"))
+    implementation(project(":albaz-jcl"))
 }

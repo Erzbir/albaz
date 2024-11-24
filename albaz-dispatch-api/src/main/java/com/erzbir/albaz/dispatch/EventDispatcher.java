@@ -1,7 +1,7 @@
 package com.erzbir.albaz.dispatch;
 
 
-import com.erzbir.albaz.interceptor.DispatchInterceptor;
+import com.erzbir.albaz.common.Interceptor;
 
 /**
  * 事件调度器
@@ -17,7 +17,7 @@ public interface EventDispatcher extends Cancelable {
 
     <E extends Event> void dispatch(E event, EventChannel<E> channel);
 
-    void addInterceptor(DispatchInterceptor dispatchInterceptor);
+    void addInterceptor(Interceptor<Event> interceptor);
 
     void start();
 

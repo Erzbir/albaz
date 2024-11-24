@@ -6,9 +6,9 @@
  * @author Erzbir
  * @since 1.0.0
  */
-module com.erzbir.albaz.dispatch.core {
-    requires static lombok;
-    requires static org.slf4j;
-    requires transitive com.erzbir.albaz.dispatch.api;
-    requires transitive com.erzbir.albaz.common;
+module albaz.dispatch.core {
+    requires transitive albaz.dispatch.api;
+    requires transitive albaz.common;
+    requires albaz.jcl;
+    exports com.erzbir.albaz.dispatch.internal to albaz.dispatch;
 }

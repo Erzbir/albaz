@@ -6,7 +6,7 @@ import com.erzbir.albaz.dispatch.Event;
 
 /**
  * @author Erzbir
- * @Data: 2024/2/22 02:32
+ * @since 1.0.0
  */
 public interface NamedEvent extends Event {
     String getName();
