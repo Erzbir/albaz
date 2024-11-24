@@ -1,4 +1,7 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.listener;
+
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.event.Event;
 
 /**
  * <p>

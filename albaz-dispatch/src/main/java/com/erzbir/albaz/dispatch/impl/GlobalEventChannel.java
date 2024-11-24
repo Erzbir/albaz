@@ -1,7 +1,13 @@
-package com.erzbir.albaz.dispatch.internal;
+package com.erzbir.albaz.dispatch.impl;
 
-import com.erzbir.albaz.dispatch.*;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.spi.GlobalEventChannelProvider;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.listener.Listener;
+import com.erzbir.albaz.dispatch.listener.ListenerHandle;
+import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 
+import java.util.ServiceLoader;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -10,13 +16,12 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @since 1.0.0
  */
-public final class InternalGlobalEventChannel extends EventChannel<Event> {
-    public static InternalGlobalEventChannel INSTANCE = new InternalGlobalEventChannel(Event.class);
-    private final EventChannel<Event> delegate;
+public final class GlobalEventChannel extends EventChannel<Event> {
+    public final static GlobalEventChannel INSTANCE = new GlobalEventChannel();
+    private final EventChannel<Event> delegate = ServiceLoader.load(GlobalEventChannelProvider.class).iterator().next().getInstance();
 
-    private InternalGlobalEventChannel(Class<Event> baseEventClass) {
-        super(baseEventClass);
-        delegate = EventChannelDispatcher.INSTANCE;
+    private GlobalEventChannel() {
+        super(Event.class);
     }
 
     @Override
@@ -64,5 +69,3 @@ public final class InternalGlobalEventChannel extends EventChannel<Event> {
         return delegate.getListeners();
     }
 }
-
-

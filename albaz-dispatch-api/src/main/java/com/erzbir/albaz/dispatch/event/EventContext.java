@@ -1,5 +1,4 @@
-package com.erzbir.albaz.dispatch;
-
+package com.erzbir.albaz.dispatch.event;
 
 import com.erzbir.albaz.common.Context;
 

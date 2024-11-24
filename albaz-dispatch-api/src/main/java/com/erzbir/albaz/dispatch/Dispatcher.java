@@ -6,5 +6,9 @@ package com.erzbir.albaz.dispatch;
  * @since 1.0.0
  */
 public interface Dispatcher {
-    EventDispatcher getEventDispatcher();
+    void start();
+
+    boolean isActive();
+
+    void join();
 }

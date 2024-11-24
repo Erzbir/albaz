@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.event;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;

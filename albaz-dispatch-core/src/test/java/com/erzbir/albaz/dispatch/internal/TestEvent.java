@@ -1,7 +1,7 @@
 package com.erzbir.albaz.dispatch.internal;
 
-import com.erzbir.albaz.dispatch.AbstractEvent;
-import com.erzbir.albaz.dispatch.Event;
+import com.erzbir.albaz.dispatch.event.AbstractEvent;
+import com.erzbir.albaz.dispatch.event.Event;
 
 /**
  * @author Erzbir

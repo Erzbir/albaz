@@ -1,7 +1,7 @@
 package com.erzbir.albaz.dispatch.internal;
 
-import com.erzbir.albaz.dispatch.Event;
-import com.erzbir.albaz.dispatch.Listener;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.listener.Listener;
 
 /**
  * <p>

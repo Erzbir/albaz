@@ -1,6 +1,6 @@
 package com.erzbir.albaz.dispatch.api;
 
-import com.erzbir.albaz.dispatch.Event;
+import com.erzbir.albaz.dispatch.event.Event;
 
 /**
  * @author Erzbir

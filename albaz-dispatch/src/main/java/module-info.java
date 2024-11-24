@@ -7,6 +7,8 @@
  * @since 1.0.0
  */
 module albaz.dispatch {
+    uses com.erzbir.albaz.dispatch.spi.GlobalEventChannelProvider;
+    uses com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
     requires albaz.dispatch.core;
     requires albaz.common;
     requires albaz.dispatch.api;

@@ -1,6 +1,10 @@
 package com.erzbir.albaz.dispatch.internal;
 
-import com.erzbir.albaz.dispatch.*;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.listener.Listener;
+import com.erzbir.albaz.dispatch.listener.ListenerHandle;
+import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 
 import java.util.function.Consumer;
 import java.util.function.Function;

@@ -1,8 +1,6 @@
-package com.erzbir.albaz.dispatch.internal;
+package com.erzbir.albaz.dispatch.channel;
 
 
-import com.erzbir.albaz.dispatch.InvokerContext;
-import com.erzbir.albaz.dispatch.ListenerInvoker;
 import com.erzbir.albaz.common.Interceptor;
 
 import java.util.ArrayList;

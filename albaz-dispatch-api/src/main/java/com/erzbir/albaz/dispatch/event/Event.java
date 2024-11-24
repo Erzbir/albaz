@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.event;
 
 import java.util.concurrent.locks.Lock;
 
@@ -37,4 +37,5 @@ public interface Event {
     EventContext getContext();
 
     void setContext(EventContext context);
+
 }

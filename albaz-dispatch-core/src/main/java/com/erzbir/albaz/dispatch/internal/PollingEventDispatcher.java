@@ -1,8 +1,8 @@
 package com.erzbir.albaz.dispatch.internal;
 
-import com.erzbir.albaz.dispatch.CancelableEvent;
-import com.erzbir.albaz.dispatch.Event;
-import com.erzbir.albaz.dispatch.EventChannel;
+import com.erzbir.albaz.dispatch.event.CancelableEvent;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;

@@ -1,7 +1,14 @@
 package com.erzbir.albaz.dispatch.internal;
 
 
-import com.erzbir.albaz.dispatch.*;
+import com.erzbir.albaz.common.Interceptor;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.channel.ListenerInvoker;
+import com.erzbir.albaz.dispatch.event.AbstractEvent;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.listener.Listener;
+import com.erzbir.albaz.dispatch.listener.ListenerHandle;
+import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 
@@ -34,7 +41,6 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     protected final Map<Listener<?>, ListenerRegistry> listeners = new ConcurrentHashMap<>();
     private final Log log = LogFactory.getLog(getClass());
     private final Map<Listener<?>, Thread> taskMap = new WeakHashMap<>();
-    protected ListenerInvoker listenerInvoker = new ListenerInvokers.InterceptorInvoker();
 
     public EventChannelImpl(Class<E> baseEventClass) {
         super(baseEventClass);
@@ -123,9 +129,12 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         return new SafeListener(listener);
     }
 
-    private boolean interceptProcess(Listener<E> listener) {
-        InterceptProcessor interceptProcessor = new InternalInterceptProcessor();
-        return interceptProcessor.intercept(listener, interceptors);
+    private boolean intercept(Listener<E> listener) {
+        boolean flag = true;
+        for (Interceptor<Listener<E>> interceptor : interceptors) {
+            flag &= interceptor.intercept(listener);
+        }
+        return flag;
     }
 
     /**
@@ -142,8 +151,8 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         SafeListener listener = (SafeListener) listenerRegistry.listener();
         String name = listener.delegate.getClass().getSimpleName();
         log.debug("Broadcasting event: " + event + " to listener: " + (name.isEmpty() ? listener.delegate.getClass().getName() : name));
-        ;
-        if (!interceptProcess(listener)) {
+        if (!intercept(listener)) {
+            log.info("Listener: " + (name.isEmpty() ? listener.delegate.getClass().getName() : name) + " was intercepted");
             return;
         }
         Runnable invokeRunnable = createInvokeRunnable(event, listener);
@@ -162,7 +171,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 if (lock != null) {
                     lock.lock();
                 }
-                ListenerStatus listenerStatus = listenerInvoker.invoke(new InvokerContext(event, listener));
+                ListenerStatus listenerStatus = listenerInvoker.invoke(new ListenerInvoker.InvokerContext(event, listener));
                 if (lock != null) {
                     lock.unlock();
                 }

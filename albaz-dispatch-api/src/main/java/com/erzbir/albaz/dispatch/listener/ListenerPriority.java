@@ -1,10 +1,10 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.listener;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-public enum EventPriority {
+public enum ListenerPriority {
     HIGH,
 
     NORMAL,

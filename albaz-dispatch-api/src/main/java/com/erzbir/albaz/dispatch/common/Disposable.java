@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.common;
 
 /**
  * @author Erzbir

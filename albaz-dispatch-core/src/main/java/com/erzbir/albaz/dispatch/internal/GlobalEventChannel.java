@@ -1,6 +1,11 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.internal;
 
-import java.util.ServiceLoader;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.listener.Listener;
+import com.erzbir.albaz.dispatch.listener.ListenerHandle;
+import com.erzbir.albaz.dispatch.listener.ListenerStatus;
+
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -10,11 +15,12 @@ import java.util.function.Predicate;
  * @since 1.0.0
  */
 public final class GlobalEventChannel extends EventChannel<Event> {
-    public final static GlobalEventChannel INSTANCE = new GlobalEventChannel();
-    private final EventChannel<Event> delegate = ServiceLoader.load(GlobalEventChannelProvider.class).iterator().next().getInstance();
+    public static GlobalEventChannel INSTANCE = new GlobalEventChannel(Event.class);
+    private final EventChannel<Event> delegate;
 
-    private GlobalEventChannel() {
-        super(Event.class);
+    private GlobalEventChannel(Class<Event> baseEventClass) {
+        super(baseEventClass);
+        delegate = EventChannelDispatcher.INSTANCE;
     }
 
     @Override
@@ -62,3 +68,5 @@ public final class GlobalEventChannel extends EventChannel<Event> {
         return delegate.getListeners();
     }
 }
+
+

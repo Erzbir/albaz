@@ -1,7 +1,13 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.channel;
 
 
 import com.erzbir.albaz.common.Interceptor;
+import com.erzbir.albaz.dispatch.common.Cancelable;
+import com.erzbir.albaz.dispatch.common.ListenerContainer;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.listener.Listener;
+import com.erzbir.albaz.dispatch.listener.ListenerHandle;
+import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +45,7 @@ public abstract class EventChannel<E extends Event> implements ListenerContainer
     protected Class<E> baseEventClass;
     protected List<Interceptor<Listener<E>>> interceptors = new ArrayList<>();
     protected AtomicBoolean activated = new AtomicBoolean(true);
+    protected ListenerInvoker listenerInvoker = new InterceptorInvoker();
 
     public EventChannel(Class<E> baseEventClass) {
         this.baseEventClass = baseEventClass;
@@ -46,6 +53,14 @@ public abstract class EventChannel<E extends Event> implements ListenerContainer
 
     public Class<E> getBaseEventClass() {
         return baseEventClass;
+    }
+
+    public ListenerInvoker getListenerInvoker() {
+        return listenerInvoker;
+    }
+
+    public void setListenerInvoker(ListenerInvoker listenerInvoker) {
+        this.listenerInvoker = listenerInvoker;
     }
 
     /**
@@ -141,7 +156,6 @@ public abstract class EventChannel<E extends Event> implements ListenerContainer
     public abstract <T extends E> EventChannel<T> filterInstance(Class<T> eventType);
 
 //    public abstract <T extends E> void forward(EventChannel<E> channel);
-
 //    protected abstract void callListeners(E event);
 
     public void addInterceptor(Interceptor<Listener<E>> listenerInterceptor) {

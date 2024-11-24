@@ -1,8 +1,8 @@
 package com.erzbir.albaz.dispatch.api;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
-import com.erzbir.albaz.dispatch.GlobalEventChannel;
-import com.erzbir.albaz.dispatch.ListenerStatus;
+import com.erzbir.albaz.dispatch.impl.GlobalEventChannel;
+import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
 
 import java.util.concurrent.ExecutorService;

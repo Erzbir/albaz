@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.listener;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 

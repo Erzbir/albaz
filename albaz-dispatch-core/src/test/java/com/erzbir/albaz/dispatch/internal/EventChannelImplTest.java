@@ -1,9 +1,9 @@
 package com.erzbir.albaz.dispatch.internal;
 
-import com.erzbir.albaz.dispatch.Event;
-import com.erzbir.albaz.dispatch.EventChannel;
-import com.erzbir.albaz.dispatch.Listener;
-import com.erzbir.albaz.dispatch.ListenerStatus;
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.listener.Listener;
+import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

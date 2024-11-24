@@ -1,4 +1,7 @@
-package com.erzbir.albaz.dispatch;
+package com.erzbir.albaz.dispatch.common;
+
+import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.listener.Listener;
 
 /**
  * 监听器容器
