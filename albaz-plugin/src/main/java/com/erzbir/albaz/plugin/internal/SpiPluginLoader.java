@@ -3,7 +3,6 @@ package com.erzbir.albaz.plugin.internal;
 import com.erzbir.albaz.plugin.AbstractPluginLoader;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.PluginLoader;
-import com.erzbir.albaz.plugin.PluginManager;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
 
 import java.io.File;
@@ -19,8 +18,8 @@ import java.util.ServiceLoader;
  * @see PluginLoader
  * @since 1.0.0
  */
-public class InternalSpiPluginLoader extends AbstractPluginLoader implements PluginLoader {
-    public InternalSpiPluginLoader(ClassLoader parent) {
+public class SpiPluginLoader extends AbstractPluginLoader implements PluginLoader {
+    public SpiPluginLoader(ClassLoader parent) {
         super(parent);
     }
 

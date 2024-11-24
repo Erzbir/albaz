@@ -58,7 +58,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         SafeListener safeListener = createSafeListener((Listener<E>) listener);
         listeners.put(safeListener, new ListenerRegistry((Class) eventType, safeListener));
-        return new WeakReferenceListenerHandle(safeListener, listeners.values(), createHandleHook(safeListener));
+        return new WeakListenerHandle(safeListener, listeners.values(), createHandleHook(safeListener));
     }
 
     @SuppressWarnings({"unchecked"})
@@ -231,16 +231,16 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         }
     }
 
-    class WeakReferenceListenerHandle extends HookableHandle implements ListenerHandle {
+    class WeakListenerHandle extends HookableHandle implements ListenerHandle {
         private final AtomicBoolean disposed = new AtomicBoolean(false);
         private WeakReference<SafeListener> listenerRef;
         private WeakReference<Collection<ListenerRegistry>> collectionRef;
 
-        public WeakReferenceListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection) {
+        public WeakListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection) {
             this(listener, collection, null);
         }
 
-        public WeakReferenceListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection, Runnable hook) {
+        public WeakListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection, Runnable hook) {
             super(hook);
             this.listenerRef = new WeakReference<>(listener);
             this.collectionRef = new WeakReference<>(collection);

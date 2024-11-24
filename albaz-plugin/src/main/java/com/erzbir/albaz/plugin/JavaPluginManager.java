@@ -3,8 +3,8 @@ package com.erzbir.albaz.plugin;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.exception.PluginUnloadException;
-import com.erzbir.albaz.plugin.internal.InternalJarPluginLoader;
-import com.erzbir.albaz.plugin.internal.InternalSpiPluginLoader;
+import com.erzbir.albaz.plugin.internal.JarPluginLoader;
+import com.erzbir.albaz.plugin.internal.SpiPluginLoader;
 
 import java.io.File;
 import java.util.Map;
@@ -62,9 +62,9 @@ public class JavaPluginManager implements PluginManager {
         try {
             PluginLoader pluginLoader;
             if (isServiceLoad) {
-                pluginLoader = new InternalSpiPluginLoader(getClass().getClassLoader());
+                pluginLoader = new SpiPluginLoader(getClass().getClassLoader());
             } else {
-                pluginLoader = new InternalJarPluginLoader(getClass().getClassLoader());
+                pluginLoader = new JarPluginLoader(getClass().getClassLoader());
             }
             Plugin plugin = pluginLoader.load(file);
             if (plugin == null) {

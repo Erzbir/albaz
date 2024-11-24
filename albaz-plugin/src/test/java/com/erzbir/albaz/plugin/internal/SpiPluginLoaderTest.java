@@ -7,12 +7,12 @@ import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-class InternalSpiPluginLoaderTest {
+class SpiPluginLoaderTest {
     String file = "plugins/plugin-test-1.0.0-all.jar";
 
     @Test
     void load() throws PluginIllegalException {
-        InternalSpiPluginLoader loader = new InternalSpiPluginLoader(getClass().getClassLoader());
+        SpiPluginLoader loader = new SpiPluginLoader(getClass().getClassLoader());
         Plugin plugin = loader.load(new File(file));
         Assertions.assertNotNull(plugin);
         plugin.onLoad();

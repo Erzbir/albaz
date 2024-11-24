@@ -2,7 +2,7 @@ package com.erzbir.albaz.plugin;
 
 /**
  * <p>
- * Java 插件继承需这个抽象类
+ * Java 插件需继承这个抽象类
  * </p>
  *
  * @author Erzbir

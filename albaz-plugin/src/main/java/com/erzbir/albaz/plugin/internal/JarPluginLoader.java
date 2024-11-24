@@ -17,7 +17,7 @@ import java.util.jar.JarFile;
 
 /**
  * <p>
- * 通过 jar 包全量加载, 将其中所有依赖都加载进来
+ * 通过 Jar 包全量加载, 将其中所有依赖都加载进来
  * </p>
  *
  * @author Erzbir
@@ -25,11 +25,11 @@ import java.util.jar.JarFile;
  * @see PluginLoader
  * @since 1.0.0
  */
-public class InternalJarPluginLoader extends AbstractPluginLoader implements PluginLoader {
-    private Log log = LogFactory.getLog(InternalJarPluginLoader.class);
+public class JarPluginLoader extends AbstractPluginLoader implements PluginLoader {
+    private Log log = LogFactory.getLog(JarPluginLoader.class);
     protected final static String SERVICE_PATH = "META-INF/services/com.erzbir.albaz.plugin.Plugin";
 
-    public InternalJarPluginLoader(ClassLoader parent) {
+    public JarPluginLoader(ClassLoader parent) {
         super(parent);
     }
 
