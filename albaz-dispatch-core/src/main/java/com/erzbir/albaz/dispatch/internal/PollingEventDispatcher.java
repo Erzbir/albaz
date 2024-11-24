@@ -1,9 +1,9 @@
 package com.erzbir.albaz.dispatch.internal;
 
+import com.erzbir.albaz.dispatch.EventDispatcher;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.CancelableEvent;
 import com.erzbir.albaz.dispatch.event.Event;
-import com.erzbir.albaz.dispatch.channel.EventChannel;
-import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 
@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <p>
- * 基于轮询的 {@link EventDispatcher}, 会启动一个虚拟线程轮询拉取事件, 可以通过 {@link #join()} 方法阻塞 (不会阻塞调用线程).
+ * 基于轮询的 {@link EventDispatcher}, 会启动一个虚拟线程轮询拉取事件
  * </p>
  *
  * @author Erzbir
@@ -49,11 +49,13 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
 
     @Override
     public void start() {
-        if (!activated.compareAndSet(false, true)) {
+        if (isActive()) {
             return;
+        } else {
+            super.start();
         }
         Runnable runnable = () -> {
-            while (activated.get() && !Thread.currentThread().isInterrupted()) {
+            while (isActive() && !Thread.currentThread().isInterrupted()) {
                 try {
                     // 如果队列为空则暂让线程等待
                     if (eventQueue.isEmpty()) {
@@ -116,11 +118,23 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
         };
     }
 
-    /**
-     * 用于让主线程不退出
-     */
     @Override
     public void join() {
+        try {
+            dispatcherThread.join();
+        } catch (InterruptedException e) {
+            log.error("Dispatching error when join thread: " + dispatcherThread);
+        }
+    }
+
+    // TODO impl
+    @Override
+    public void join(long timeout) {
+
+    }
+
+    @Override
+    public void await() {
         guardThread = new Thread(() -> {
             try {
                 suspend();
@@ -131,10 +145,18 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
         guardThread.start();
     }
 
+    // TODO impl
+    @Override
+    public void await(long timeout) {
+
+    }
+
     @Override
     public void cancel() {
-        if (!activated.compareAndSet(true, false)) {
+        if (isActive()) {
             return;
+        } else {
+            super.start();
         }
         eventQueue.clear();
         // 这里需要唤醒等待的线程, 否则线程永远都不会结束

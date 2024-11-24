@@ -19,21 +19,16 @@ import java.util.function.Predicate;
 
 /**
  * <p>
- * 事件通道, 提供 监听器 的注册接口以及容器.
- * 通过 {@link  #broadcast} 方法将事件广播给所有监听器. 可通过 {@link  #filter} 方法过滤出一个新的 {@code FilterEventChannel}.
+ * 事件通道, 提供 {@link Listener} 的注册接口, 可以注册拦截器.
+ * 通过 {@link  #broadcast(Event)} 方法将事件广播给所有监听器.
+ * 可通过 {@link  #filter(Predicate)} 方法过滤出一个新的 {@link EventChannel}.
+ * </p>
+ * <p>
+ * 可以通过 {@link #cancel()}, {@link #close()}, {@link #open()} 控制通道的开关
  * </p>
  *
  * <p>
- * 基于委派链的设计, 所有广播最终都会委托到 {@code EventChannelDispatcher} 中, 这种委托是链式的,
- * 例如一个 {@code   FilterEventChannel} 会将广播委托给下一个 {@code FilterEventChannel},
- * 最终再由 {@code  InternalGlobalEventChannel} 委托到 {@code EventChannelDispatcher} 中.
- * </p>
- *
- * <p>
- *     TODO 重构为用 forward 实现过滤
- * </p>
- * <p>
- *     可以注册拦截器, 拦截器在 {@link  #broadcast} 广播事件之前触发
+ * 如果无需使用调度器, 可以直接使用调用 {@link #broadcast(Event)} 方法来广播事件
  * </p>
  *
  * @author Erzbir

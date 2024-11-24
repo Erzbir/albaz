@@ -2,9 +2,9 @@ package com.erzbir.albaz.dispatch.impl;
 
 
 import com.erzbir.albaz.common.Interceptor;
-import com.erzbir.albaz.dispatch.event.Event;
-import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.EventDispatcher;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
 
 import java.util.ServiceLoader;
@@ -63,6 +63,11 @@ public final class DefaultDispatcher implements EventDispatcher {
     @Override
     public void join() {
         delegate.join();
+    }
+
+    @Override
+    public void await() {
+        delegate.await();
     }
 
     public enum Mode {

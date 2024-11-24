@@ -1,24 +1,30 @@
 package com.erzbir.albaz.dispatch.api;
 
-import com.erzbir.albaz.dispatch.*;
+import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.impl.GlobalEventChannel;
+import com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher;
 import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
-import org.junit.jupiter.api.Test;
 
 class DefaultDispatcherTest {
-    private final Log log = LogFactory.getLog(DefaultDispatcherTest.class);
+    private static final Log log = LogFactory.getLog(DefaultDispatcherTest.class);
 
-    @Test
-    void dispatch() throws InterruptedException {
+
+    public static void main(String[] args) throws InterruptedException {
+        DefaultDispatcherTest defaultDispatcherTest = new DefaultDispatcherTest();
         EventDispatcher eventDispatcher = new PollingEventDispatcher();
-        EventChannel<NamedEvent> eventEventChannel = GlobalEventChannel.INSTANCE.filterInstance(NamedEvent.class);
+        defaultDispatcherTest.dispatchJoin(eventDispatcher);
+        System.out.println(eventDispatcher.toString());
+    }
+
+    void dispatch(EventDispatcher eventDispatcher) throws InterruptedException {
         eventDispatcher.start();
+        EventChannel<NamedEvent> eventEventChannel = GlobalEventChannel.INSTANCE.filterInstance(NamedEvent.class);
         eventEventChannel.subscribe(NamedEvent.class, event -> {
             log.info("Name: " + event.getName());
             return ListenerStatus.CONTINUE;
@@ -57,6 +63,15 @@ class DefaultDispatcherTest {
 
         }
         eventDispatcher.dispatch(new TestNamedEvent("this", "test5"), eventEventChannel);
+    }
+
+    void dispatchJoin(EventDispatcher eventDispatcher) throws InterruptedException {
+        dispatch(eventDispatcher);
         eventDispatcher.join();
+    }
+
+    void dispatchAwait(EventDispatcher eventDispatcher) throws InterruptedException {
+        dispatch(eventDispatcher);
+        eventDispatcher.await();
     }
 }

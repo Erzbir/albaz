@@ -28,6 +28,20 @@ import java.util.function.Predicate;
  * <p>
  * 事件通道的内部实现
  * </p>
+ * <p>
+ * 基于委派链的设计, 所有广播最终都会委托到 {@link EventChannelDispatcher} 中. 这种委托是链式的,
+ * 例如一个 {@link FilterEventChannel} 会将广播委托给下一个 {@link FilterEventChannel},
+ * 最终再由 {@link GlobalEventChannel} 委托到 {@link EventChannelDispatcher} 中.
+ * </p>
+ *
+ * <p>
+ * 用户注册的 {@link Listener} 会被包装成一个 {@link SafeListener}, 最终封装成一个 {@link ListenerRegistry} 注册到容器中,
+ * 并返回一个 {@link ListenerHandle}
+ * </p>
+ *
+ * <p>
+ *     TODO 重构为用 forward 实现过滤
+ * </p>
  *
  * @author Erzbir
  * @see EventChannel
@@ -35,6 +49,7 @@ import java.util.function.Predicate;
  * @see Listener
  * @see ListenerStatus
  * @see ListenerRegistry
+ * @see SafeListener
  * @since 1.0.0
  */
 class EventChannelImpl<E extends Event> extends EventChannel<E> {
@@ -46,6 +61,13 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         super(baseEventClass);
     }
 
+    /**
+     * <p>
+     * 此方法会根据 {@link Listener.ConcurrencyKind} 来决定并发时是否加锁
+     * </p>
+     *
+     * @param event 广播的事件
+     */
     @Override
     public void broadcast(Event event) {
         if (!(event instanceof AbstractEvent)) throw new IllegalArgumentException("Event must extend AbstractEvent");
@@ -150,9 +172,10 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     private void process(ListenerRegistry listenerRegistry, AbstractEvent event) {
         SafeListener listener = (SafeListener) listenerRegistry.listener();
         String name = listener.delegate.getClass().getSimpleName();
-        log.debug("Broadcasting event: " + event + " to listener: " + (name.isEmpty() ? listener.delegate.getClass().getName() : name));
+        String rName = name.isEmpty() ? listener.delegate.getClass().getName() : name;
+        log.debug("Broadcasting event: " + event + " to listener: " + rName);
         if (!intercept(listener)) {
-            log.info("Listener: " + (name.isEmpty() ? listener.delegate.getClass().getName() : name) + " was intercepted");
+            log.info("Listener: " + rName + " was intercepted");
             return;
         }
         Runnable invokeRunnable = createInvokeRunnable(event, listener);
@@ -160,6 +183,15 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 .name("Listener-Invoke-Thread-" + Thread.currentThread().threadId())
                 .start(invokeRunnable);
         taskMap.put(listener, invokeThread);
+    }
+
+    public static void main(String[] args) {
+        AtomicBoolean disposed = new AtomicBoolean(false);
+        long l = System.currentTimeMillis();
+        for (int i = 0; i < 999999999; i++) {
+            disposed.getAndSet(true);
+        }
+        System.out.println(System.currentTimeMillis() - l);
     }
 
     @SuppressWarnings({"unchecked"})

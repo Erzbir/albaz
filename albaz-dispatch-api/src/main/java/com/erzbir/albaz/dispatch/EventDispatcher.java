@@ -7,7 +7,9 @@ import com.erzbir.albaz.dispatch.common.Cancelable;
 import com.erzbir.albaz.dispatch.event.Event;
 
 /**
- * 事件调度器
+ * <p>
+ * 事件调度器, 事件通过这个接口分发到指定的 {@link EventChannel}
+ * </p>
  *
  * @author Erzbir
  * @since 1.0.0

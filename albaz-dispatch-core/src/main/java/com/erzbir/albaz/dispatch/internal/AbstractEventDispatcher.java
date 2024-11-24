@@ -65,7 +65,7 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
 
     @Override
     public void start() {
-        activated.compareAndSet(false, true);
+        activated.set(true);
     }
 
     @Override
@@ -80,6 +80,6 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
 
     @Override
     public void cancel() {
-        activated.compareAndSet(true, false);
+        activated.set(false);
     }
 }
