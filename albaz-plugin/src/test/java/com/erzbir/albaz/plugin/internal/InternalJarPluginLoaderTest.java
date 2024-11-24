@@ -1,5 +1,6 @@
 package com.erzbir.albaz.plugin.internal;
 
+import com.erzbir.albaz.plugin.JavaPluginManager;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.exception.PluginLoadException;
 import org.junit.jupiter.api.Assertions;
@@ -12,7 +13,7 @@ class InternalJarPluginLoaderTest {
 
     @Test
     void load() throws PluginLoadException {
-        InternalJarPluginLoader loader = new InternalJarPluginLoader();
+        InternalJarPluginLoader loader = new InternalJarPluginLoader(getClass().getClassLoader());
         Plugin plugin = loader.load(new File(file));
         Assertions.assertNotNull(plugin);
         plugin.onLoad();

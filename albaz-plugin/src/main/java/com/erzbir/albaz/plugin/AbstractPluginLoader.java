@@ -1,14 +1,18 @@
 package com.erzbir.albaz.plugin;
 
-import java.net.URL;
-import java.net.URLClassLoader;
-
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-public abstract class AbstractPluginLoader extends URLClassLoader implements PluginLoader {
-    public AbstractPluginLoader() {
-        super(new URL[]{});
+public abstract class AbstractPluginLoader implements PluginLoader {
+    protected PluginClassLoader classLoader;
+
+    public AbstractPluginLoader(ClassLoader parent) {
+        classLoader = new PluginClassLoader(parent);
+    }
+
+    @Override
+    public ClassLoader getClassLoader() {
+        return classLoader;
     }
 }

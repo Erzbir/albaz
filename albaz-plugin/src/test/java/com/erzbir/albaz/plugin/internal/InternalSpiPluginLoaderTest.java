@@ -12,7 +12,7 @@ class InternalSpiPluginLoaderTest {
 
     @Test
     void load() throws PluginIllegalException {
-        InternalSpiPluginLoader loader = new InternalSpiPluginLoader();
+        InternalSpiPluginLoader loader = new InternalSpiPluginLoader(getClass().getClassLoader());
         Plugin plugin = loader.load(new File(file));
         Assertions.assertNotNull(plugin);
         plugin.onLoad();

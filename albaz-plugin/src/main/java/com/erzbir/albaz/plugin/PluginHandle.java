@@ -1,11 +1,9 @@
 package com.erzbir.albaz.plugin;
 
-import com.erzbir.albaz.logging.Log;
-import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.exception.PluginUnloadException;
 
-import java.io.File;
-import java.lang.ref.WeakReference;
+import java.io.Closeable;
+import java.nio.file.Path;
 
 /**
  * <p>
@@ -16,42 +14,50 @@ import java.lang.ref.WeakReference;
  * @since 1.0.0
  */
 public class PluginHandle {
-    private final Log log = LogFactory.getLog(PluginHandle.class);
-    private WeakReference<PluginLoader> pluginLoader;
-    private WeakReference<Plugin> plugin;
-    private WeakReference<File> file;
+    private PluginLoader pluginLoader;
+    private Plugin plugin;
+    private Path file;
+    private PluginManager pluginManager;
 
-    public PluginHandle(Plugin plugin, File file, PluginLoader pluginLoader) {
-        this.pluginLoader = new WeakReference<>(pluginLoader);
-        this.plugin = new WeakReference<>(plugin);
-        this.file = new WeakReference<>(file);
+    public PluginHandle(Plugin plugin, Path file, PluginLoader pluginLoader, PluginManager pluginManager) {
+        this.pluginLoader = pluginLoader;
+        this.plugin = plugin;
+        this.file = file;
+        this.pluginManager = pluginManager;
     }
 
     public PluginLoader getPluginLoader() {
-        return pluginLoader.get();
+        return pluginLoader;
     }
 
     public Plugin getPlugin() {
-        return plugin.get();
+        return plugin;
     }
 
-    public File getFile() {
-        return file.get();
+    public Path getFile() {
+        return file;
     }
 
-    public void destroy() throws PluginUnloadException {
+    public PluginManager getPluginManager() {
+        return pluginManager;
+    }
+
+    public void unload() throws PluginUnloadException {
+        pluginManager.unloadPlugin(plugin.getDescription().getId());
+    }
+
+    void destroy() throws PluginUnloadException {
         try {
-            pluginLoader.get().close();
+            ClassLoader classLoader = pluginLoader.getClassLoader();
+            ((Closeable) classLoader).close();
+            classLoader = null;
         } catch (Throwable e) {
-            log.error("Failed to close ClassLoader", e);
-            throw new PluginUnloadException(e);
+            throw new PluginUnloadException("Failed to close ClassLoader", e);
         }
-        file.enqueue();
-        pluginLoader.enqueue();
-        plugin.enqueue();
         file = null;
         pluginLoader = null;
         plugin = null;
+        pluginManager = null;
         System.gc();
     }
 }

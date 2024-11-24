@@ -5,7 +5,6 @@ import com.erzbir.albaz.plugin.internal.InternalJarPluginLoader;
 import com.erzbir.albaz.plugin.internal.InternalSpiPluginLoader;
 
 import java.io.File;
-import java.io.IOException;
 
 /**
  * <p>
@@ -23,5 +22,5 @@ import java.io.IOException;
 public interface PluginLoader {
     Plugin load(File file) throws PluginLoadException;
 
-    void close() throws IOException;
+    ClassLoader getClassLoader();
 }
