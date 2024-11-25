@@ -1,8 +1,11 @@
 package com.erzbir.albaz.plugin;
 
-import com.erzbir.albaz.plugin.exception.PluginUnloadException;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
+import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.nio.file.Path;
 
 /**
@@ -14,6 +17,7 @@ import java.nio.file.Path;
  * @since 1.0.0
  */
 public class PluginHandle {
+    private final Log log = LogFactory.getLog(PluginHandle.class);
     private PluginLoader pluginLoader;
     private Plugin plugin;
     private Path file;
@@ -42,17 +46,17 @@ public class PluginHandle {
         return pluginManager;
     }
 
-    public void unload() throws PluginUnloadException {
+    public void unload() throws PluginNotFoundException {
         pluginManager.unloadPlugin(plugin.getDescription().getId());
     }
 
-    void destroy() throws PluginUnloadException {
+    void destroy() {
         try {
             ClassLoader classLoader = pluginLoader.getClassLoader();
             ((Closeable) classLoader).close();
             classLoader = null;
-        } catch (Throwable e) {
-            throw new PluginUnloadException("Failed to close ClassLoader", e);
+        } catch (IOException e) {
+            log.error("Failed to close ClassLoader", e);
         }
         file = null;
         pluginLoader = null;

@@ -1,6 +1,6 @@
 package com.erzbir.albaz.plugin;
 
-import com.erzbir.albaz.plugin.exception.PluginLoadException;
+import com.erzbir.albaz.plugin.exception.PluginIllegalException;
 import com.erzbir.albaz.plugin.internal.JarPluginLoader;
 import com.erzbir.albaz.plugin.internal.SpiPluginLoader;
 
@@ -20,7 +20,7 @@ import java.io.File;
  * @since 1.0.0
  */
 public interface PluginLoader {
-    Plugin load(File file) throws PluginLoadException;
+    Plugin load(File file) throws PluginIllegalException;
 
     ClassLoader getClassLoader();
 }

@@ -1,6 +1,6 @@
 package com.erzbir.albaz.plugin;
 
-import com.erzbir.albaz.plugin.exception.PluginUnloadException;
+import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 
 import java.io.File;
 
@@ -15,21 +15,21 @@ public interface PluginManager {
 
     void loadPlugin(File file);
 
-    void reloadPlugins() throws PluginUnloadException;
+    void reloadPlugins() throws PluginNotFoundException;
 
-    void reloadPlugin(String pluginId) throws PluginUnloadException;
+    void reloadPlugin(String pluginId) throws PluginNotFoundException;
 
-    void enablePlugin(String pluginId);
+    void enablePlugin(String pluginId) throws PluginNotFoundException;
 
-    void enablePlugins();
+    void enablePlugins() throws PluginNotFoundException;
 
-    void disablePlugin(String pluginId);
+    void disablePlugin(String pluginId) throws PluginNotFoundException;
 
-    void disablePlugins();
+    void disablePlugins() throws PluginNotFoundException;
 
-    void unloadPlugins() throws PluginUnloadException;
+    void unloadPlugins() throws PluginNotFoundException;
 
-    void unloadPlugin(String pluginId) throws PluginUnloadException;
+    void unloadPlugin(String pluginId) throws PluginNotFoundException;
 
     int size();
 }

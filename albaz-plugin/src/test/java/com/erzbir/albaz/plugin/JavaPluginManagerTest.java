@@ -1,6 +1,6 @@
 package com.erzbir.albaz.plugin;
 
-import com.erzbir.albaz.plugin.exception.PluginUnloadException;
+import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -16,7 +16,7 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void serviceLoad() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginUnloadException {
+    void serviceLoad() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
         javaPluginManager.useServiceLoader(false);
         javaPluginManager.loadPlugins();
@@ -41,7 +41,7 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void enablePlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    void enablePlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
 
         javaPluginManager.loadPlugins();
@@ -50,7 +50,7 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void enablePlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    void enablePlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
 
         javaPluginManager.loadPlugins();
@@ -59,7 +59,7 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void disablePlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    void disablePlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
         javaPluginManager.loadPlugins();
         javaPluginManager.disablePlugin("test");
@@ -67,7 +67,7 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void disablePlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+    void disablePlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
         javaPluginManager.loadPlugins();
         javaPluginManager.enablePlugins();
@@ -76,7 +76,7 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void unloadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginUnloadException {
+    void unloadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
         javaPluginManager.loadPlugins();
         Assertions.assertEquals(1, javaPluginManager.size());
@@ -86,7 +86,7 @@ class JavaPluginManagerTest {
         Assertions.assertEquals(0, javaPluginManager.size());
     }
 
-    public static void main(String[] args) throws InterruptedException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException, PluginUnloadException {
+    public static void main(String[] args) throws InterruptedException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
         javaPluginManager.loadPlugins();
         Assertions.assertEquals(1, javaPluginManager.size());
@@ -97,7 +97,7 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void unloadPlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginUnloadException {
+    void unloadPlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
         javaPluginManager.loadPlugins();
         Assertions.assertEquals(1, javaPluginManager.size());

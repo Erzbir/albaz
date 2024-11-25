@@ -2,7 +2,7 @@ package com.erzbir.albaz.plugin;
 
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
-import com.erzbir.albaz.plugin.exception.PluginUnloadException;
+import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 import com.erzbir.albaz.plugin.internal.JarPluginLoader;
 import com.erzbir.albaz.plugin.internal.SpiPluginLoader;
 
@@ -86,53 +86,72 @@ public class JavaPluginManager implements PluginManager {
     }
 
     @Override
-    public void reloadPlugins() throws PluginUnloadException {
+    public void reloadPlugins() throws PluginNotFoundException {
         unloadPlugins();
         loadPlugins();
     }
 
     @Override
-    public void reloadPlugin(String pluginId) throws PluginUnloadException {
-        File pluginFile = plugins.get(pluginId).getFile().toFile();
+    public void reloadPlugin(String pluginId) throws PluginNotFoundException {
+        PluginHandle pluginHandle = plugins.get(pluginId);
+        if (pluginHandle == null) {
+            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+        }
+        File pluginFile = pluginHandle.getFile().toFile();
         unloadPlugin(pluginId);
         loadPlugin(pluginFile);
     }
 
     @Override
-    public void enablePlugin(String pluginId) {
-        plugins.get(pluginId).getPlugin().enable();
+    public void enablePlugin(String pluginId) throws PluginNotFoundException {
+        PluginHandle pluginHandle = plugins.get(pluginId);
+        if (pluginHandle == null) {
+            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+        }
+        pluginHandle.getPlugin().enable();
     }
 
     @Override
-    public void enablePlugins() {
-        plugins.forEach((k, v) -> enablePlugin(k));
+    public void enablePlugins() throws PluginNotFoundException {
+        for (String pluginId : plugins.keySet()) {
+            enablePlugin(pluginId);
+        }
     }
 
     @Override
-    public void disablePlugin(String pluginId) {
-        plugins.get(pluginId).getPlugin().disable();
+    public void disablePlugin(String pluginId) throws PluginNotFoundException {
+        PluginHandle pluginHandle = plugins.get(pluginId);
+        if (pluginHandle == null) {
+            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+        }
+        pluginHandle.getPlugin().disable();
     }
 
     @Override
-    public void disablePlugins() {
-        plugins.forEach((k, v) -> disablePlugin(k));
+    public void disablePlugins() throws PluginNotFoundException {
+        for (String pluginId : plugins.keySet()) {
+            disablePlugin(pluginId);
+        }
     }
 
     @Override
-    public void unloadPlugins() throws PluginUnloadException {
+    public void unloadPlugins() throws PluginNotFoundException {
         for (String pluginId : plugins.keySet()) {
             unloadPlugin(pluginId);
         }
     }
 
     @Override
-    public void unloadPlugin(String pluginId) throws PluginUnloadException {
+    public void unloadPlugin(String pluginId) throws PluginNotFoundException {
         PluginHandle pluginHandle = plugins.get(pluginId);
+        if (pluginHandle == null) {
+            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+        }
         pluginHandle.getPlugin().onUnLoad();
         try {
             Thread.sleep(100);
         } catch (InterruptedException e) {
-            throw new PluginUnloadException(String.format("Plugin: %s unload failed when sleep", pluginId), e);
+            log.error(String.format("Plugin: %s unload failed when sleep", pluginId), e);
         }
         pluginHandle.destroy();
         plugins.remove(pluginId);

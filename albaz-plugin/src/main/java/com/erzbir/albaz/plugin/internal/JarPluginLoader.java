@@ -6,7 +6,6 @@ import com.erzbir.albaz.plugin.AbstractPluginLoader;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.PluginLoader;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
-import com.erzbir.albaz.plugin.exception.PluginLoadException;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -26,7 +25,7 @@ import java.util.jar.JarFile;
  * @since 1.0.0
  */
 public class JarPluginLoader extends AbstractPluginLoader implements PluginLoader {
-    private Log log = LogFactory.getLog(JarPluginLoader.class);
+    private final Log log = LogFactory.getLog(JarPluginLoader.class);
     protected final static String SERVICE_PATH = "META-INF/services/com.erzbir.albaz.plugin.Plugin";
 
     public JarPluginLoader(ClassLoader parent) {
@@ -34,7 +33,7 @@ public class JarPluginLoader extends AbstractPluginLoader implements PluginLoade
     }
 
     @Override
-    public Plugin load(File file) throws PluginLoadException {
+    public Plugin load(File file) throws PluginIllegalException {
         if (!file.isFile() || !file.getName().endsWith(".jar") || !file.canRead()) {
             throw new PluginIllegalException(String.format("%s is not a jar file or can't read", file.getName()));
         }
@@ -62,7 +61,7 @@ public class JarPluginLoader extends AbstractPluginLoader implements PluginLoade
         return loadPlugin(jarFile);
     }
 
-    private Plugin loadPlugin(JarFile jarFile) throws PluginLoadException {
+    private Plugin loadPlugin(JarFile jarFile) throws PluginIllegalException {
         try (jarFile; BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(jarFile.getInputStream(jarFile.getEntry(SERVICE_PATH))))) {
             String line;
             while ((line = bufferedReader.readLine()) != null) {
@@ -77,6 +76,6 @@ public class JarPluginLoader extends AbstractPluginLoader implements PluginLoade
         } catch (ClassNotFoundException | IllegalAccessException | NoSuchFieldException | IOException e1) {
             throw new PluginIllegalException(e1);
         }
-        throw new PluginLoadException(String.format("Failed to load plugin: %s. Maybe service file has no contents", jarFile.getName()));
+        throw new PluginIllegalException(String.format("Failed to load plugin: %s. Maybe service file has no contents", jarFile.getName()));
     }
 }

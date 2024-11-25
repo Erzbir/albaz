@@ -4,7 +4,7 @@ package com.erzbir.albaz.plugin.exception;
  * @author Erzbir
  * @since 1.0.0
  */
-public class PluginIllegalException extends PluginLoadException {
+public class PluginIllegalException extends Exception {
     public PluginIllegalException() {
         super();
     }

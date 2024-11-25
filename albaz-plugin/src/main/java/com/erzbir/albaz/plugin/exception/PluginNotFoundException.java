@@ -4,7 +4,7 @@ package com.erzbir.albaz.plugin.exception;
  * @author Erzbir
  * @since 1.0.0
  */
-public class PluginNotFoundException extends PluginLoadException {
+public class PluginNotFoundException extends Exception {
     public PluginNotFoundException() {
         super();
     }
