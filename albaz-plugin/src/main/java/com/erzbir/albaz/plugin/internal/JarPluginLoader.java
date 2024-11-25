@@ -11,7 +11,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.lang.reflect.Field;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.util.jar.JarFile;
 
 /**
@@ -67,14 +68,14 @@ public class JarPluginLoader extends AbstractPluginLoader implements PluginLoade
             while ((line = bufferedReader.readLine()) != null) {
                 Class<?> clazz = Class.forName(line, true, classLoader);
                 if (Plugin.class.isAssignableFrom(clazz)) {
-                    Field instanceField = clazz.getField("INSTANCE");
-                    instanceField.setAccessible(true);
-                    Object instance = instanceField.get(null);
+                    MethodHandles.Lookup lookup = MethodHandles.lookup();
+                    MethodHandle instanceGetter = lookup.findStaticGetter(clazz, "INSTANCE", clazz);
+                    Object instance = instanceGetter.invoke();
                     return (Plugin) instance;
                 }
             }
-        } catch (ClassNotFoundException | IllegalAccessException | NoSuchFieldException | IOException e1) {
-            throw new PluginIllegalException(e1);
+        } catch (Throwable e) {
+            throw new PluginIllegalException(e);
         }
         throw new PluginIllegalException(String.format("Failed to load plugin: %s. Maybe service file has no contents", jarFile.getName()));
     }
