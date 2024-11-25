@@ -10,7 +10,7 @@ class PluginHandleTest {
     @Test
     void unload() throws PluginNotFoundException {
         JavaPluginManager pluginManager = new JavaPluginManager();
-        pluginManager.useServiceLoader(true);
+        pluginManager.useServiceLoader(false);
         pluginManager.loadPlugins();
         List<PluginHandle> pluginHandles = pluginManager.getPluginHandles();
         for (PluginHandle pluginHandle : pluginHandles) {
