@@ -1,10 +1,8 @@
-package com.erzbir.albaz.plugin.internal;
+package com.erzbir.albaz.plugin.loader;
 
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
-import com.erzbir.albaz.plugin.AbstractPluginLoader;
 import com.erzbir.albaz.plugin.Plugin;
-import com.erzbir.albaz.plugin.PluginLoader;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
 
 import java.io.BufferedReader;

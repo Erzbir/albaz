@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.erzbir.albaz.plugin;
+package com.erzbir.albaz.plugin.loader;
 
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;

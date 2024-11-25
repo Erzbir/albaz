@@ -12,4 +12,5 @@ module albaz.plugin {
     requires albaz.jcl;
     exports com.erzbir.albaz.plugin;
     exports com.erzbir.albaz.plugin.exception;
+    exports com.erzbir.albaz.plugin.loader;
 }

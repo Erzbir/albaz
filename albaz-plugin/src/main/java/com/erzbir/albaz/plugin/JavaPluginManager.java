@@ -3,8 +3,9 @@ package com.erzbir.albaz.plugin;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
-import com.erzbir.albaz.plugin.internal.JarPluginLoader;
-import com.erzbir.albaz.plugin.internal.SpiPluginLoader;
+import com.erzbir.albaz.plugin.loader.JarPluginLoader;
+import com.erzbir.albaz.plugin.loader.PluginLoader;
+import com.erzbir.albaz.plugin.loader.SpiPluginLoader;
 
 import java.io.File;
 import java.util.List;

@@ -1,4 +1,4 @@
-package com.erzbir.albaz.plugin;
+package com.erzbir.albaz.plugin.loader;
 
 /**
  * @author Erzbir

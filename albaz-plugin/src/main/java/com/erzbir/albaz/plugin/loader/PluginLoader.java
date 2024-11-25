@@ -1,8 +1,7 @@
-package com.erzbir.albaz.plugin;
+package com.erzbir.albaz.plugin.loader;
 
+import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
-import com.erzbir.albaz.plugin.internal.JarPluginLoader;
-import com.erzbir.albaz.plugin.internal.SpiPluginLoader;
 
 import java.io.File;
 

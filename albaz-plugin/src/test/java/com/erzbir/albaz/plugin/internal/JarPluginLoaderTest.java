@@ -1,5 +1,6 @@
 package com.erzbir.albaz.plugin.internal;
 
+import com.erzbir.albaz.plugin.loader.JarPluginLoader;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
 import org.junit.jupiter.api.Assertions;

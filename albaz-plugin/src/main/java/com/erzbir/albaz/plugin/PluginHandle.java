@@ -3,6 +3,7 @@ package com.erzbir.albaz.plugin;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
+import com.erzbir.albaz.plugin.loader.PluginLoader;
 
 import java.io.Closeable;
 import java.io.IOException;
