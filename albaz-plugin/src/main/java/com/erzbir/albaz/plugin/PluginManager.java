@@ -3,6 +3,7 @@ package com.erzbir.albaz.plugin;
 import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 
 import java.io.File;
+import java.util.List;
 
 /**
  * @author Erzbir
@@ -32,4 +33,12 @@ public interface PluginManager {
     void unloadPlugin(String pluginId) throws PluginNotFoundException;
 
     int size();
+
+    Plugin getPlugin(String pluginId);
+
+    List<Plugin> getPlugins();
+
+    PluginHandle getPluginHandle(String pluginId);
+
+    List<PluginHandle> getPluginHandles();
 }

@@ -7,8 +7,10 @@ import com.erzbir.albaz.plugin.internal.JarPluginLoader;
 import com.erzbir.albaz.plugin.internal.SpiPluginLoader;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -160,5 +162,25 @@ public class JavaPluginManager implements PluginManager {
     @Override
     public int size() {
         return plugins.size();
+    }
+
+    @Override
+    public Plugin getPlugin(String pluginId) {
+        return plugins.get(pluginId).getPlugin();
+    }
+
+    @Override
+    public List<Plugin> getPlugins() {
+        return plugins.values().stream().map(PluginHandle::getPlugin).collect(Collectors.toList());
+    }
+
+    @Override
+    public PluginHandle getPluginHandle(String pluginId) {
+        return plugins.get(pluginId);
+    }
+
+    @Override
+    public List<PluginHandle> getPluginHandles() {
+        return plugins.values().stream().toList();
     }
 }
