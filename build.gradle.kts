@@ -24,7 +24,7 @@ dependencies {
 }
 
 val javaVersion = JavaVersion.VERSION_21
-val gradleVersion = "8.10.2"
+val gradleVersion = "8.11.1"
 val encoding = "UTF-8"
 
 
