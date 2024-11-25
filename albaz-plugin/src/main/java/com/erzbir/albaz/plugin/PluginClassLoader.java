@@ -29,6 +29,7 @@ public class PluginClassLoader extends URLClassLoader {
     private static final Log log = LogFactory.getLog(PluginClassLoader.class);
 
     private static final String JAVA_PACKAGE_PREFIX = "java.";
+    private static final String JAVAX_PACKAGE_PREFIX = "javax.";
     private static final String PLUGIN_PACKAGE_PREFIX = "com.erzbir.albaz.plugin.";
 
     private boolean closed;
@@ -53,7 +54,7 @@ public class PluginClassLoader extends URLClassLoader {
     @Override
     public Class<?> loadClass(String className) throws ClassNotFoundException {
         synchronized (getClassLoadingLock(className)) {
-            if (className.startsWith(JAVA_PACKAGE_PREFIX)) {
+            if (className.startsWith(JAVA_PACKAGE_PREFIX) || className.startsWith(JAVAX_PACKAGE_PREFIX)) {
                 return findSystemClass(className);
             }
             if (className.startsWith(PLUGIN_PACKAGE_PREFIX)) {
@@ -65,10 +66,14 @@ public class PluginClassLoader extends URLClassLoader {
                 return loadedClass;
             }
 
-            Class<?> c = findClass(className);
+            try {
+                Class<?> c = findClass(className);
 
-            if (c != null) {
-                return c;
+                if (c != null) {
+                    return c;
+                }
+            } catch (ClassNotFoundException e) {
+                getParent().loadClass(className);
             }
         }
 
