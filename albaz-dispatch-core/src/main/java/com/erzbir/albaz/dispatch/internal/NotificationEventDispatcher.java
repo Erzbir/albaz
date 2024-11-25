@@ -60,22 +60,23 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
         }
     }
 
-    // TODO impl
     @Override
     public void join(long timeout) {
-
+        long sleepTime = 10;
+        int times = (int) (timeout % sleepTime);
+        try {
+            while (times-- > 0) {
+                Thread.sleep(10);
+            }
+        } catch (InterruptedException e) {
+            log.error("Dispatching error when join thread: " + guardThread);
+        }
     }
 
     @Override
     public void await() {
         guardThread = new Thread(this::join, "Dispatch-Thread-Guard");
         guardThread.start();
-    }
-
-    // TODO impl
-    @Override
-    public void await(long timeout) {
-
     }
 
     @Override

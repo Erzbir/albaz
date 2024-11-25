@@ -75,11 +75,6 @@ public final class DefaultDispatcher implements EventDispatcher {
         delegate.await();
     }
 
-    @Override
-    public void await(long timeout) {
-        delegate.await();
-    }
-
     public enum Mode {
         POLL,
         NOTIFY

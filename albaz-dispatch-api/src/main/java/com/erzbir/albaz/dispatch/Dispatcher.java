@@ -26,5 +26,4 @@ public interface Dispatcher {
      */
     void await();
 
-    void await(long timeout);
 }

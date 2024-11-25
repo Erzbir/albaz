@@ -127,10 +127,13 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
         }
     }
 
-    // TODO impl
     @Override
     public void join(long timeout) {
-
+        try {
+            dispatcherThread.join(timeout);
+        } catch (InterruptedException e) {
+            log.error("Dispatching error when join thread: " + dispatcherThread);
+        }
     }
 
     @Override
@@ -143,12 +146,6 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
             }
         }, "Dispatch-Thread-Guard");
         guardThread.start();
-    }
-
-    // TODO impl
-    @Override
-    public void await(long timeout) {
-
     }
 
     @Override
