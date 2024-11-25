@@ -15,14 +15,13 @@ import java.util.ServiceLoader;
  */
 public final class DefaultDispatcher implements EventDispatcher {
     public static final DefaultDispatcher INSTANCE = new DefaultDispatcher();
-    private final EventDispatcher delegate = ServiceLoader.load(EventDispatcherProvider.class).iterator().next().getInstance();
-
-    public static void main(String[] args) {
-        DefaultDispatcher dispatcher = new DefaultDispatcher();
-        System.out.println(dispatcher.delegate);
-    }
+    private final EventDispatcher delegate;
 
     private DefaultDispatcher() {
+        delegate = ServiceLoader.load(EventDispatcherProvider.class).iterator().next().getInstance();
+        if (delegate == null) {
+            throw new IllegalStateException("No EventDispatcher found");
+        }
     }
 
     @Override

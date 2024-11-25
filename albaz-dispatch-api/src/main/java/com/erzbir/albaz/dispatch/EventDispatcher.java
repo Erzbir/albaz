@@ -12,6 +12,7 @@ import com.erzbir.albaz.dispatch.event.Event;
  * </p>
  *
  * @author Erzbir
+ * @see Dispatcher
  * @since 1.0.0
  */
 public interface EventDispatcher extends Dispatcher, Cancelable {
