@@ -69,7 +69,7 @@ public final class GlobalEventChannel extends EventChannel<Event> {
     }
 
     @Override
-    public Iterable<Listener<Event>> getListeners() {
+    public Iterable<Listener<?>> getListeners() {
         return delegate.getListeners();
     }
 }

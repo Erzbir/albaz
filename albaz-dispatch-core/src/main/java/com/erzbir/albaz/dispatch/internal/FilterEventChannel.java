@@ -93,7 +93,7 @@ final class FilterEventChannel<E extends Event> extends EventChannel<E> {
     }
 
     @Override
-    public Iterable<Listener<E>> getListeners() {
+    public Iterable<Listener<?>> getListeners() {
         return delegate.getListeners();
     }
 

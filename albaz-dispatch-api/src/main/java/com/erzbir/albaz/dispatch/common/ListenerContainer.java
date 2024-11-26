@@ -9,6 +9,6 @@ import com.erzbir.albaz.dispatch.listener.Listener;
  * @author Erzbir
  * @since 1.0.0
  */
-public interface ListenerContainer<E extends Event> {
-    Iterable<Listener<E>> getListeners();
+public interface ListenerContainer {
+    Iterable<Listener<?>> getListeners();
 }

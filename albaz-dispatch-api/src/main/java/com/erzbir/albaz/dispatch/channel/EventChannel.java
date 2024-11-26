@@ -41,7 +41,7 @@ import java.util.function.Predicate;
  * @see ListenerInvoker
  * @since 1.0.0
  */
-public abstract class EventChannel<E extends Event> implements ListenerContainer<E>, Cancelable {
+public abstract class EventChannel<E extends Event> implements ListenerContainer, Cancelable {
     protected Class<E> baseEventClass;
     protected List<Interceptor<Listener<E>>> interceptors = new ArrayList<>();
     protected AtomicBoolean activated = new AtomicBoolean(true);
