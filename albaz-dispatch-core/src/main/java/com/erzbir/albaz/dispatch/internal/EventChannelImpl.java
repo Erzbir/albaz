@@ -165,6 +165,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         String rName = name.isEmpty() ? listener.delegate.getClass().getName() : name;
         log.debug("Broadcasting event: " + event + " to listener: " + rName);
         if (!intercept(listener)) {
+            listener.truncate();
             log.info("Listener: " + rName + " was intercepted");
             return;
         }
@@ -192,6 +193,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 }
                 listenerInvoker.invoke(new ListenerInvoker.InvokerContext(event, listener));
             } catch (Throwable e) {
+                safeListener.truncate();
                 log.error("Calling listener error: " + e.getMessage(), e);
             } finally {
                 if (lock != null) {
@@ -305,18 +307,20 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         public ListenerStatus onEvent(E event) {
             try {
                 if (!active.get() || Thread.currentThread().isInterrupted()) {
+                    inactive();
                     return ListenerStatus.STOP;
                 }
                 ListenerStatus listenerStatus = delegate.onEvent(event);
                 switch (listenerStatus) {
-                    case ListenerStatus.Status.STOP -> active.set(false);
-                    case ListenerStatus.Status.TRUNCATED -> truncated.set(true);
+                    case ListenerStatus.Status.STOP -> inactive();
+                    case ListenerStatus.Status.TRUNCATED -> truncate();
                     default -> {
                     }
                 }
                 return listenerStatus;
             } catch (Throwable e) {
                 log.error("Listener error: " + e.getMessage(), e);
+                truncate();
                 return ListenerStatus.TRUNCATED;
             } finally {
                 if (!active.get()) {
