@@ -20,11 +20,15 @@ import java.util.function.Predicate;
 /**
  * <p>
  * 事件通道, 提供 {@link Listener} 的注册接口, 可以注册拦截器.
- * 通过 {@link  #broadcast(Event)} 方法将事件广播给所有监听器.
- * 可通过 {@link  #filter(Predicate)} 方法过滤出一个新的 {@link EventChannel}.
+ * 通过 {@link #broadcast(Event)} 方法将事件广播给所有监听器.
+ * 可通过 {@link #filter(Predicate)} 方法过滤出一个新的 {@link EventChannel}.
  * </p>
  * <p>
  * 可以通过 {@link #cancel()}, {@link #close()}, {@link #open()} 控制通道的开关
+ * </p>
+ *
+ * <p>
+ * 监听回调最终会由 {@link ListenerInvoker} 执行, 可以自定义 {@link ListenerInvoker} 实现功能扩展, 推荐用代理包装的形式
  * </p>
  *
  * <p>
@@ -34,6 +38,7 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @see ListenerContainer
  * @see Interceptor
+ * @see ListenerInvoker
  * @since 1.0.0
  */
 public abstract class EventChannel<E extends Event> implements ListenerContainer<E>, Cancelable {

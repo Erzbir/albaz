@@ -9,6 +9,5 @@ import com.erzbir.albaz.dispatch.common.Cancelable;
 public interface CancelableEvent extends Cancelable {
     boolean isCanceled();
 
-    // must be safe
     void cancel();
 }

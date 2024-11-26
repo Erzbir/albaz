@@ -23,7 +23,7 @@ public interface Event {
     boolean isIntercepted();
 
     /**
-     * 拦截这个事件. 当事件被拦截之后, 调度器就不会再将事件分发到事件频道
+     * 拦截这个事件. 当事件被拦截之后, 调度器不再将事件分发到事件频道, 也不再被广播
      */
     void intercepted();
 

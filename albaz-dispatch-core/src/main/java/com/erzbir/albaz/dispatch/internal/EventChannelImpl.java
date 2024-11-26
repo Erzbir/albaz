@@ -71,7 +71,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     public void broadcast(Event event) {
         if (!(event instanceof AbstractEvent)) throw new IllegalArgumentException("Event must extend AbstractEvent");
         if (event.isIntercepted()) {
-            log.debug("Event: {" + event + "} was truncated, cancel broadcast");
+            log.debug("Event: {" + event + "} was intercepted, cancel broadcast");
             return;
         }
         if (listeners.isEmpty()) {

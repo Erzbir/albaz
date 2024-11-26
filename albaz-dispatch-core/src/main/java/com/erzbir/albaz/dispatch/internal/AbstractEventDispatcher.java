@@ -39,6 +39,7 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
         }
         log.debug("Received event: " + event);
         if (!intercept(event)) {
+            log.debug("Intercept event: " + event);
             return;
         }
         if (channel.isCanceled()) {

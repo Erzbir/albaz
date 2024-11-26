@@ -4,11 +4,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <p>
- * 一次监听完成返回的结果, {@code CONTINUE} 表示继续监听, {@code STOP} 表示停止监听, {@code TRUNCATED} 表示截断
+ * 一次监听完成返回的结果, {@link #CONTINUE} 表示继续监听, {@link #STOP} 表示停止监听, {@link #TRUNCATED} 表示截断
  * </p>
  *
  * <p>
- * 通常只需要用到 {@code CONTINUE} 和 {@code STOP} 两种, {@code TRUNCATED} 只发生在某些特殊情况
+ * 通常只需要用到 {@link #CONTINUE} 和 {@link #STOP} 两种, {@link #TRUNCATED} 只发生在某些特殊情况 (例如被拦截或者抛错)
  * </p>
  *
  * @author Erzbir
