@@ -4,7 +4,6 @@ import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.impl.GlobalEventChannel;
-import com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher;
 import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
@@ -19,7 +18,7 @@ class DefaultDispatcherTest {
         DefaultDispatcherTest defaultDispatcherTest = new DefaultDispatcherTest();
         EventDispatcher eventDispatcher = new PollingEventDispatcher();
         defaultDispatcherTest.dispatchJoin(eventDispatcher);
-        System.out.println(eventDispatcher.toString());
+        System.out.println(eventDispatcher);
     }
 
     void dispatch(EventDispatcher eventDispatcher) throws InterruptedException {
@@ -48,11 +47,25 @@ class DefaultDispatcherTest {
                 return ConcurrencyKind.LOCKED;
             }
         };
+        Listener<TestNamedEvent> listener2 = new Listener<>() {
+            @Override
+            public ListenerStatus onEvent(TestNamedEvent event) {
+                log.info("this is a TestNamedEvent 33333");
+                return ListenerStatus.STOP;
+            }
+
+            @Override
+            public ConcurrencyKind concurrencyKind() {
+                return ConcurrencyKind.LOCKED;
+            }
+        };
         GlobalEventChannel.INSTANCE.subscribe(TestNamedEvent.class, event -> {
             log.info("this is a TestNamedEvent");
             return ListenerStatus.STOP;
         });
         GlobalEventChannel.INSTANCE.registerListener(TestNamedEvent.class, listener);
+        GlobalEventChannel.INSTANCE.registerListener(TestNamedEvent.class, listener2);
+
         GlobalEventChannel.INSTANCE.subscribe(Event.class, event -> {
             log.info("this is an Event");
             return ListenerStatus.CONTINUE;

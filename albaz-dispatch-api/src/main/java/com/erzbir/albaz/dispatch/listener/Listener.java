@@ -6,7 +6,6 @@ import com.erzbir.albaz.dispatch.event.Event;
 /**
  * <p>
  * 监听器接口, 使用 {@link EventChannel} 来注册监听.
- * 注册的监听在内部会被包装成 {@code SafeListener}, 这个包装类会捕获所有错误
  * </p>
  * <p>
  * 这个接口只规定了需要实现并发模式, 触发类型和优先级不强制
@@ -35,6 +34,14 @@ public interface Listener<E extends Event> {
         return ConcurrencyKind.CONCURRENT;
     }
 
+    default TriggerType triggerType() {
+        return TriggerType.CONCURRENT;
+    }
+
+    default Priority priority() {
+        return Priority.HIGH;
+    }
+
     enum ConcurrencyKind {
         /**
          * 监听器被移除后可能不会立即停止监听
@@ -53,9 +60,7 @@ public interface Listener<E extends Event> {
 
     enum Priority {
         HIGH,
-
         NORMAL,
-
         LOW,
     }
 }

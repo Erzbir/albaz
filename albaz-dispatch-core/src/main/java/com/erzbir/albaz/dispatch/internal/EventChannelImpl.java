@@ -13,8 +13,6 @@ import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 
 import java.lang.ref.WeakReference;
-import java.util.Collection;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -23,7 +21,7 @@ import java.util.function.Predicate;
 
 /**
  * <p>
- * 事件通道的内部实现
+ * 事件通道的内部实现, 实现了 {@link Listener.ConcurrencyKind}, {@link Listener.TriggerType} 以及 {@link Listener.Priority}
  * </p>
  * <p>
  * 基于委派链的设计, 所有广播最终都会委托到 {@link EventChannelDispatcher} 中. 这种委托是链式的,
@@ -83,7 +81,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         SafeListener safeListener = createSafeListener((Listener<E>) listener);
         eventListeners.addListener(new ListenerRegistry((Class) eventType, safeListener));
-        return new WeakListenerHandle(safeListener, eventListeners.getListenersWithPriority(Listener.Priority.HIGH), createHandleHook(safeListener));
+        return new WeakListenerHandle(safeListener);
     }
 
     @SuppressWarnings({"unchecked"})
@@ -128,7 +126,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
 
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
-    public Iterable<Listener<?>> getListeners() {
+    public Iterable<Listener<Event>> getListeners() {
         return (Iterable) eventListeners.getListeners();
     }
 
@@ -140,7 +138,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         if (listener instanceof SafeListener) {
             return (SafeListener) listener;
         }
-        return new SafeListener(listener);
+        return new SafeListener(listener, eventListeners);
     }
 
     private boolean intercept(Listener<E> listener) {
@@ -171,7 +169,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             return;
         }
         Runnable invokeRunnable = createInvokeRunnable(event, listener);
-        trigger(listener.triggerType, invokeRunnable);
+        trigger(listener.triggerType(), invokeRunnable);
     }
 
     private void trigger(Listener.TriggerType triggerType, Runnable runnable) {
@@ -192,13 +190,9 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 if (lock != null) {
                     lock.lock();
                 }
-                ListenerStatus listenerStatus = listenerInvoker.invoke(new ListenerInvoker.InvokerContext(event, listener));
-                if (listenerStatus == ListenerStatus.STOP) {
-                    safeListener.inactive();
-                    eventListeners.removeListener(listener);
-                }
+                listenerInvoker.invoke(new ListenerInvoker.InvokerContext(event, listener));
             } catch (Throwable e) {
-                log.error("Calling listener error: " + e);
+                log.error("Calling listener error: " + e.getMessage(), e);
             } finally {
                 if (lock != null) {
                     lock.unlock();
@@ -207,69 +201,13 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         };
     }
 
-    private Runnable createHandleHook(Listener<E> listener) {
-        return () -> {
 
-        };
-    }
-
-    abstract static class HookableHandle implements ListenerHandle {
-        protected Runnable hook;
-
-        public HookableHandle(Runnable hook) {
-            this.hook = hook;
-            if (this.hook == null) {
-                this.hook = () -> {
-                };
-            }
-        }
-    }
-
-    class IndexListenerHandle extends HookableHandle implements ListenerHandle {
-        private final AtomicBoolean disposed = new AtomicBoolean(false);
-
-        private final int index;
-        private final List<SafeListener> listeners;
-
-        public IndexListenerHandle(int index, List<SafeListener> listeners) {
-            this(index, listeners, null);
-        }
-
-        public IndexListenerHandle(int index, List<SafeListener> listeners, Runnable hook) {
-            super(hook);
-            this.index = index;
-            this.listeners = listeners;
-        }
-
-        @Override
-        public void dispose() {
-            if (!disposed.compareAndSet(false, true)) {
-                return;
-            }
-            SafeListener remove = listeners.remove(index);
-            remove.inactive();
-            hook.run();
-        }
-
-        @Override
-        public boolean isDisposed() {
-            return disposed.get();
-        }
-    }
-
-    class WeakListenerHandle extends HookableHandle implements ListenerHandle {
+    class WeakListenerHandle implements ListenerHandle {
         private final AtomicBoolean disposed = new AtomicBoolean(false);
         private WeakReference<SafeListener> listenerRef;
-        private WeakReference<Collection<ListenerRegistry>> collectionRef;
 
-        public WeakListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection) {
-            this(listener, collection, null);
-        }
-
-        public WeakListenerHandle(SafeListener listener, Collection<ListenerRegistry> collection, Runnable hook) {
-            super(hook);
+        public WeakListenerHandle(SafeListener listener) {
             this.listenerRef = new WeakReference<>(listener);
-            this.collectionRef = new WeakReference<>(collection);
         }
 
 
@@ -280,17 +218,11 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             } else {
                 disposed.set(true);
             }
-            Collection<ListenerRegistry> collection = collectionRef.get();
-            if (collection != null) {
-                SafeListener listener = listenerRef.get();
-                if (listener != null) {
-                    listener.inactive();
-                    collection.removeIf(listenerRegistry -> listenerRegistry.listener().equals(listener));
-                }
+            SafeListener safeListener = listenerRef.get();
+            if (safeListener != null) {
+                safeListener.remove();
             }
             listenerRef = null;
-            collectionRef = null;
-            hook.run();
         }
 
         @Override
@@ -301,36 +233,35 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
 
     /**
      * <p>
-     * 一个安全监听器, 通过 {@link EventChannel} 注册的所有监听, 最终都会被包装成此类对象. 捕获所有异常.
+     * 一个安全监听器, 通过 {@link EventChannel} 注册的所有监听, 最终都会被包装成此类对象.
+     * 捕获所有异常.
      * </p>
      *
      * <p>
-     * 这个类实现了 {@link  ConcurrencyKind}, 在执行真正的监听回调之前会检查标志位 {@link  #active}, 判断是否要执行.
-     * 这个标志位 {@link #active} 会在监听器返回 {@link  ListenerStatus#STOP} 时被置为 {@code false}.
+     * 这个类实现了 {@link ConcurrencyKind} 和 {@link TriggerType}, 在执行真正的监听回调之前会检查标志位 {@link #active}, 判断是否要执行.
+     * 这个标志位 {@link #active} 会在监听器返回 {@link ListenerStatus#STOP} 时被置为 {@code false}. 可以根据委托 {@link #delegate} 返回的结果自动移除监听
      * </p>
      *
      * @see Listener
      * @see ConcurrencyKind
+     * @see TriggerType
      * @see ListenerStatus
      */
     class SafeListener implements Listener<E> {
         private final Log log;
         private final Listener<E> delegate;
-        private final Listener.TriggerType triggerType;
         private final AtomicBoolean active = new AtomicBoolean(true);
         private final AtomicBoolean truncated = new AtomicBoolean(false);
+        private final EventListeners eventListeners;
         /**
          * 在 {@link  ConcurrencyKind#LOCKED} 模式下, 这个锁会初始化赋值
          */
         private ReentrantLock lock;
 
-        public SafeListener(Listener<E> delegate) {
-            this(delegate, TriggerType.CONCURRENT);
-        }
 
-        public SafeListener(Listener<E> delegate, Listener.TriggerType triggerType) {
+        public SafeListener(Listener<E> delegate, EventListeners eventListeners) {
             this.delegate = delegate;
-            this.triggerType = triggerType;
+            this.eventListeners = eventListeners;
             log = LogFactory.getLog(delegate.getClass());
             switch (concurrencyKind()) {
                 case CONCURRENT -> lock = null;
@@ -346,6 +277,14 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         }
 
         /**
+         * 仅内部使用, 在需要的时候可以直接删除监听器
+         */
+        void remove() {
+            active.set(false);
+            eventListeners.removeListener(this);
+        }
+
+        /**
          * 仅内部使用, 在需要的时候可以直接通过此方法设置标志位
          */
         void truncate() {
@@ -358,14 +297,16 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         }
 
         @Override
+        public TriggerType triggerType() {
+            return delegate.triggerType();
+        }
+
+        @Override
         public ListenerStatus onEvent(E event) {
-            if (Thread.currentThread().isInterrupted()) {
-                return ListenerStatus.STOP;
-            }
-            if (!active.get()) {
-                return ListenerStatus.STOP;
-            }
             try {
+                if (!active.get() || Thread.currentThread().isInterrupted()) {
+                    return ListenerStatus.STOP;
+                }
                 ListenerStatus listenerStatus = delegate.onEvent(event);
                 switch (listenerStatus) {
                     case ListenerStatus.Status.STOP -> active.set(false);
@@ -375,8 +316,12 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 }
                 return listenerStatus;
             } catch (Throwable e) {
-                log.error("Calling listener error: " + e.getMessage());
+                log.error("Listener error: " + e.getMessage(), e);
                 return ListenerStatus.TRUNCATED;
+            } finally {
+                if (!active.get()) {
+                    eventListeners.removeListener(this);
+                }
             }
         }
     }

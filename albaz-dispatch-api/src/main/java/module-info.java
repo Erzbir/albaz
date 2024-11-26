@@ -1,4 +1,9 @@
 /**
+ * <p>
+ * 这个模块是调度层的接口模块, 只规定了必须实现的 API,
+ * {@link com.erzbir.albaz.dispatch.listener.Listener.ConcurrencyKind} 类似功能交给实现层选择性实现
+ * </p>
+ *
  * @author Erzbir
  * @since 1.0.0
  */

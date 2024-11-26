@@ -10,5 +10,5 @@ import com.erzbir.albaz.dispatch.listener.Listener;
  * @since 1.0.0
  */
 public interface ListenerContainer {
-    Iterable<Listener<?>> getListeners();
+    Iterable<Listener<Event>> getListeners();
 }
