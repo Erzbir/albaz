@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 /**
  * <p>
  * 事件通道, 提供 {@link Listener} 的注册接口, 可以注册拦截器.
- * 通过 {@link #broadcast(Event)} 方法将事件广播给所有监听器.
+ * 通过 {@link #broadcast(Event)} 方法将事件广播给所有监听器, 一个 {@link Event} 要被广播必须继承 {@link com.erzbir.albaz.dispatch.event.AbstractEvent}.
  * 可通过 {@link #filter(Predicate)} 方法过滤出一个新的 {@link EventChannel}.
  * </p>
  * <p>

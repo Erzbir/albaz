@@ -66,6 +66,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
      * </p>
      *
      * @param event 广播的事件
+     * @throws IllegalArgumentException 事件不为 {@link AbstractEvent} 则会抛错
      */
     @Override
     public void broadcast(Event event) {
