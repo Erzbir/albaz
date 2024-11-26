@@ -191,11 +191,15 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             return;
         }
         Runnable invokeRunnable = createInvokeRunnable(event, listener);
-        switch (listener.triggerType) {
-            case INSTANT -> invokeRunnable.run();
+        trigger(listener.triggerType, invokeRunnable);
+    }
+
+    private void trigger(Listener.TriggerType triggerType, Runnable runnable) {
+        switch (triggerType) {
+            case INSTANT -> runnable.run();
             case CONCURRENT -> Thread.ofVirtual()
                     .name("Listener-Invoke-Thread-" + Thread.currentThread().threadId())
-                    .start(invokeRunnable);
+                    .start(runnable);
         }
     }
 
