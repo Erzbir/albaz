@@ -13,11 +13,7 @@ import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 
 import java.lang.ref.WeakReference;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.WeakHashMap;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -53,12 +49,15 @@ import java.util.function.Predicate;
  * @since 1.0.0
  */
 class EventChannelImpl<E extends Event> extends EventChannel<E> {
-    protected final Map<Listener<?>, ListenerRegistry> listeners = new ConcurrentHashMap<>();
+    protected final EnumMap<Listener.Priority, List<ListenerRegistry>> listeners = new EnumMap<>(Listener.Priority.class);
     private final Log log = LogFactory.getLog(getClass());
-    private final Map<Listener<?>, Thread> taskMap = new WeakHashMap<>();
 
     public EventChannelImpl(Class<E> baseEventClass) {
         super(baseEventClass);
+        listeners.put(Listener.Priority.HIGH, Collections.synchronizedList(new ArrayList<>()));
+        listeners.put(Listener.Priority.LOW, Collections.synchronizedList(new ArrayList<>()));
+        listeners.put(Listener.Priority.NORMAL, Collections.synchronizedList(new ArrayList<>()));
+        listeners.put(Listener.Priority.MONITOR, Collections.synchronizedList(new ArrayList<>()));
     }
 
     /**
@@ -85,8 +84,9 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     @Override
     public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         SafeListener safeListener = createSafeListener((Listener<E>) listener);
-        listeners.put(safeListener, new ListenerRegistry((Class) eventType, safeListener));
-        return new WeakListenerHandle(safeListener, listeners.values(), createHandleHook(safeListener));
+        List<ListenerRegistry> listenerRegistries = listeners.get(Listener.Priority.HIGH);
+        listenerRegistries.add(new ListenerRegistry((Class) eventType, safeListener));
+        return new WeakListenerHandle(safeListener, listenerRegistries, createHandleHook(safeListener));
     }
 
     @SuppressWarnings({"unchecked"})
@@ -132,16 +132,27 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Iterable<Listener<E>> getListeners() {
-        return (Iterable) listeners.values().stream().map(ListenerRegistry::listener).toList();
+        return (Iterable) listeners.values().stream().flatMap(List::stream).map(ListenerRegistry::listener).toList();
     }
 
     private void callListeners(AbstractEvent event) {
-        for (ListenerRegistry listenerRegistry : listeners.values()) {
+        List<ListenerRegistry> listenersHigh = listeners.get(Listener.Priority.HIGH);
+        List<ListenerRegistry> listenersNormal = listeners.get(Listener.Priority.NORMAL);
+        List<ListenerRegistry> listenersLow = listeners.get(Listener.Priority.LOW);
+        callListeners0(listenersHigh, event);
+        callListeners0(listenersNormal, event);
+        callListeners0(listenersLow, event);
+
+    }
+
+    private void callListeners0(List<ListenerRegistry> listeners, AbstractEvent event) {
+        for (ListenerRegistry listenerRegistry : listeners) {
             if (!listenerRegistry.eventType().isInstance(event)) {
                 continue;
             }
             process(listenerRegistry, event);
         }
+
     }
 
     private SafeListener createSafeListener(Listener<E> listener) {
@@ -179,52 +190,41 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             return;
         }
         Runnable invokeRunnable = createInvokeRunnable(event, listener);
-        Thread invokeThread = Thread.ofVirtual()
-                .name("Listener-Invoke-Thread-" + Thread.currentThread().threadId())
-                .start(invokeRunnable);
-        taskMap.put(listener, invokeThread);
-    }
-
-    public static void main(String[] args) {
-        AtomicBoolean disposed = new AtomicBoolean(false);
-        long l = System.currentTimeMillis();
-        for (int i = 0; i < 999999999; i++) {
-            disposed.getAndSet(true);
+        switch (listener.triggerType) {
+            case INSTANT -> invokeRunnable.run();
+            case CONCURRENT -> Thread.ofVirtual()
+                    .name("Listener-Invoke-Thread-" + Thread.currentThread().threadId())
+                    .start(invokeRunnable);
         }
-        System.out.println(System.currentTimeMillis() - l);
     }
 
     @SuppressWarnings({"unchecked"})
     private Runnable createInvokeRunnable(AbstractEvent event, Listener<?> listener) {
         return () -> {
+            SafeListener safeListener = (SafeListener) listener;
+            ReentrantLock lock = safeListener.lock;
             try {
-                SafeListener safeListener = (SafeListener) listener;
-                ReentrantLock lock = safeListener.lock;
                 if (lock != null) {
                     lock.lock();
                 }
                 ListenerStatus listenerStatus = listenerInvoker.invoke(new ListenerInvoker.InvokerContext(event, listener));
+                if (listenerStatus == ListenerStatus.STOP) {
+                    safeListener.inactive();
+                    new ArrayList<>(listeners.values().stream().flatMap(List::stream).toList()).removeIf(listenerRegistry -> listenerRegistry.listener().equals(listener));
+                }
+            } catch (Throwable e) {
+                log.error("Calling listener error: " + e);
+            } finally {
                 if (lock != null) {
                     lock.unlock();
                 }
-                if (listenerStatus == ListenerStatus.STOP) {
-                    safeListener.inactive();
-                    listeners.remove(listener);
-                }
-
-            } catch (Throwable e) {
-                log.error("Calling listener error: " + e.getMessage());
             }
         };
     }
 
     private Runnable createHandleHook(Listener<E> listener) {
         return () -> {
-            Thread thread = taskMap.get(listener);
-            if (thread == null) {
-                return;
-            }
-            thread.interrupt();
+
         };
     }
 
@@ -290,8 +290,10 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
 
         @Override
         public void dispose() {
-            if (!disposed.compareAndSet(false, true)) {
+            if (isDisposed()) {
                 return;
+            } else {
+                disposed.set(true);
             }
             Collection<ListenerRegistry> collection = collectionRef.get();
             if (collection != null) {
@@ -329,6 +331,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     class SafeListener implements Listener<E> {
         private final Log log;
         private final Listener<E> delegate;
+        private final Listener.TriggerType triggerType;
         private final AtomicBoolean active = new AtomicBoolean(true);
         private final AtomicBoolean truncated = new AtomicBoolean(false);
         /**
@@ -336,9 +339,13 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
          */
         private ReentrantLock lock;
 
-
         public SafeListener(Listener<E> delegate) {
+            this(delegate, TriggerType.CONCURRENT);
+        }
+
+        public SafeListener(Listener<E> delegate, Listener.TriggerType triggerType) {
             this.delegate = delegate;
+            this.triggerType = triggerType;
             log = LogFactory.getLog(delegate.getClass());
             switch (concurrencyKind()) {
                 case CONCURRENT -> lock = null;

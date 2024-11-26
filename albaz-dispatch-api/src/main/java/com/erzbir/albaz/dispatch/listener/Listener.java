@@ -42,4 +42,19 @@ public interface Listener<E extends Event> {
          */
         LOCKED
     }
+
+    enum TriggerType {
+        INSTANT,    // 瞬时触发, 同步的方式
+        CONCURRENT // 并发触发
+    }
+
+    enum Priority {
+        HIGH,
+
+        NORMAL,
+
+        LOW,
+
+        MONITOR
+    }
 }
