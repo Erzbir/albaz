@@ -13,7 +13,8 @@ import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 
 import java.lang.ref.WeakReference;
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
@@ -49,15 +50,11 @@ import java.util.function.Predicate;
  * @since 1.0.0
  */
 class EventChannelImpl<E extends Event> extends EventChannel<E> {
-    protected final EnumMap<Listener.Priority, List<ListenerRegistry>> listeners = new EnumMap<>(Listener.Priority.class);
     private final Log log = LogFactory.getLog(getClass());
+    private final EventListeners eventListeners = new EventListeners();
 
     public EventChannelImpl(Class<E> baseEventClass) {
         super(baseEventClass);
-        listeners.put(Listener.Priority.HIGH, Collections.synchronizedList(new ArrayList<>()));
-        listeners.put(Listener.Priority.LOW, Collections.synchronizedList(new ArrayList<>()));
-        listeners.put(Listener.Priority.NORMAL, Collections.synchronizedList(new ArrayList<>()));
-        listeners.put(Listener.Priority.MONITOR, Collections.synchronizedList(new ArrayList<>()));
     }
 
     /**
@@ -75,7 +72,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             log.debug("Event: {" + event + "} was intercepted, cancel broadcast");
             return;
         }
-        if (listeners.isEmpty()) {
+        if (eventListeners.isEmpty()) {
             log.debug("EventChannel: " + getClass().getSimpleName() + " has no listeners, broadcasting canceled");
         }
         callListeners((AbstractEvent) event);
@@ -85,9 +82,8 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     @Override
     public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         SafeListener safeListener = createSafeListener((Listener<E>) listener);
-        List<ListenerRegistry> listenerRegistries = listeners.get(Listener.Priority.HIGH);
-        listenerRegistries.add(new ListenerRegistry((Class) eventType, safeListener));
-        return new WeakListenerHandle(safeListener, listenerRegistries, createHandleHook(safeListener));
+        eventListeners.addListener(new ListenerRegistry((Class) eventType, safeListener));
+        return new WeakListenerHandle(safeListener, eventListeners.getListenersWithPriority(Listener.Priority.HIGH), createHandleHook(safeListener));
     }
 
     @SuppressWarnings({"unchecked"})
@@ -133,27 +129,11 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Iterable<Listener<?>> getListeners() {
-        return (Iterable) listeners.values().stream().flatMap(List::stream).map(ListenerRegistry::listener).toList();
+        return (Iterable) eventListeners.getListeners();
     }
 
     private void callListeners(AbstractEvent event) {
-        List<ListenerRegistry> listenersHigh = listeners.get(Listener.Priority.HIGH);
-        List<ListenerRegistry> listenersNormal = listeners.get(Listener.Priority.NORMAL);
-        List<ListenerRegistry> listenersLow = listeners.get(Listener.Priority.LOW);
-        callListeners0(listenersHigh, event);
-        callListeners0(listenersNormal, event);
-        callListeners0(listenersLow, event);
-
-    }
-
-    private void callListeners0(List<ListenerRegistry> listeners, AbstractEvent event) {
-        for (ListenerRegistry listenerRegistry : listeners) {
-            if (!listenerRegistry.eventType().isInstance(event)) {
-                continue;
-            }
-            process(listenerRegistry, event);
-        }
-
+        eventListeners.callListeners(event, this::process);
     }
 
     private SafeListener createSafeListener(Listener<E> listener) {
@@ -215,7 +195,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 ListenerStatus listenerStatus = listenerInvoker.invoke(new ListenerInvoker.InvokerContext(event, listener));
                 if (listenerStatus == ListenerStatus.STOP) {
                     safeListener.inactive();
-                    new ArrayList<>(listeners.values().stream().flatMap(List::stream).toList()).removeIf(listenerRegistry -> listenerRegistry.listener().equals(listener));
+                    eventListeners.removeListener(listener);
                 }
             } catch (Throwable e) {
                 log.error("Calling listener error: " + e);

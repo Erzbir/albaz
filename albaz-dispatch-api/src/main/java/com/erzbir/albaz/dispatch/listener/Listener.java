@@ -57,7 +57,5 @@ public interface Listener<E extends Event> {
         NORMAL,
 
         LOW,
-
-        MONITOR
     }
 }
