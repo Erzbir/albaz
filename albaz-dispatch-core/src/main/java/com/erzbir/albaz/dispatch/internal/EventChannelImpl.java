@@ -127,7 +127,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Iterable<Listener<Event>> getListeners() {
-        return (Iterable) eventListeners.getListeners();
+        return (Iterable) eventListeners.getListeners().stream().map(ListenerRegistry::listener).toList();
     }
 
     private void callListeners(AbstractEvent event) {

@@ -1,7 +1,7 @@
 package com.erzbir.albaz.dispatch.internal;
 
-import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import org.junit.jupiter.api.Assertions;
@@ -83,7 +83,7 @@ class EventChannelImplTest {
     @Test
     void subscribeAlways() {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.subscribeOnce(TestEvent.class, event -> Assertions.assertEquals(TestEvent.class, event.getClass()));
+        eventChannel.subscribeAlways(TestEvent.class, event -> Assertions.assertEquals(TestEvent.class, event.getClass()));
         Assertions.assertNotNull(eventChannel.getListeners().iterator().next());
         Assertions.assertEquals(ListenerStatus.CONTINUE, eventChannel.getListeners().iterator().next().onEvent(new TestEvent(this)));
     }

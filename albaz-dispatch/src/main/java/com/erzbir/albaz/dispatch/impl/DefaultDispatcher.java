@@ -73,10 +73,5 @@ public final class DefaultDispatcher implements EventDispatcher {
     public void await() {
         delegate.await();
     }
-
-    public enum Mode {
-        POLL,
-        NOTIFY
-    }
 }
 
