@@ -32,8 +32,6 @@ public interface Event {
      */
     int getPriority();
 
-    Lock getBroadCastLock();
-
     EventContext getContext();
 
     void setContext(EventContext context);

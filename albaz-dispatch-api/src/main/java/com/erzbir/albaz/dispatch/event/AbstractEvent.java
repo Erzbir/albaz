@@ -10,7 +10,6 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public abstract class AbstractEvent implements Event {
     protected final AtomicBoolean intercepted;
-    protected final Lock lock = new ReentrantLock();
     private final AtomicBoolean canceled;
     protected final Object source;
     protected final long timestamp;
@@ -51,11 +50,6 @@ public abstract class AbstractEvent implements Event {
     public boolean isCanceled() {
         if (!(this instanceof CancelableEvent)) throw new UnsupportedOperationException();
         return canceled.get();
-    }
-
-    @Override
-    public Lock getBroadCastLock() {
-        return lock;
     }
 
     @Override

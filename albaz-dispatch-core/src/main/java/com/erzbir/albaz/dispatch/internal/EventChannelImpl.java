@@ -3,7 +3,6 @@ package com.erzbir.albaz.dispatch.internal;
 
 import com.erzbir.albaz.common.Interceptor;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
-import com.erzbir.albaz.dispatch.channel.ListenerInvoker;
 import com.erzbir.albaz.dispatch.event.AbstractEvent;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
@@ -49,7 +48,8 @@ import java.util.function.Predicate;
  */
 class EventChannelImpl<E extends Event> extends EventChannel<E> {
     private final Log log = LogFactory.getLog(getClass());
-    private final EventListeners eventListeners = new EventListeners();
+    protected final ListenerRegistries listenerRegistries = new ListenerRegistries();
+
 
     public EventChannelImpl(Class<E> baseEventClass) {
         super(baseEventClass);
@@ -70,7 +70,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             log.debug("Event: {" + event + "} was intercepted, cancel broadcast");
             return;
         }
-        if (eventListeners.isEmpty()) {
+        if (listenerRegistries.isEmpty()) {
             log.debug("EventChannel: " + getClass().getSimpleName() + " has no listeners, broadcasting canceled");
         }
         callListeners((AbstractEvent) event);
@@ -80,7 +80,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     @Override
     public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         SafeListener safeListener = createSafeListener((Listener<E>) listener);
-        eventListeners.addListener(new ListenerRegistry((Class) eventType, safeListener));
+        listenerRegistries.addListener(new ListenerRegistry((Class) eventType, safeListener));
         return new WeakListenerHandle(safeListener);
     }
 
@@ -127,18 +127,18 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public Iterable<Listener<Event>> getListeners() {
-        return (Iterable) eventListeners.getListeners().stream().map(ListenerRegistry::listener).toList();
+        return (Iterable) listenerRegistries.getListeners().stream().map(ListenerRegistry::listener).toList();
     }
 
     private void callListeners(AbstractEvent event) {
-        eventListeners.callListeners(event, this::process);
+        listenerRegistries.callListeners(event, this::process);
     }
 
     private SafeListener createSafeListener(Listener<E> listener) {
         if (listener instanceof SafeListener) {
             return (SafeListener) listener;
         }
-        return new SafeListener(listener, eventListeners);
+        return new SafeListener(listener, listenerRegistries);
     }
 
     private boolean intercept(Listener<E> listener) {
@@ -183,17 +183,16 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     }
 
     @SuppressWarnings({"unchecked"})
-    private Runnable createInvokeRunnable(AbstractEvent event, Listener<?> listener) {
+    private Runnable createInvokeRunnable(AbstractEvent event, SafeListener listener) {
         return () -> {
-            SafeListener safeListener = (SafeListener) listener;
-            ReentrantLock lock = safeListener.lock;
+            ReentrantLock lock = listener.lock;
             try {
                 if (lock != null) {
                     lock.lock();
                 }
-                listenerInvoker.invoke(new ListenerInvoker.InvokerContext(event, listener));
+                listener.onEvent((E) event);
             } catch (Throwable e) {
-                safeListener.truncate();
+                listener.truncate();
                 log.error("Calling listener error: " + e.getMessage(), e);
             } finally {
                 if (lock != null) {
@@ -254,16 +253,16 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         private final Listener<E> delegate;
         private final AtomicBoolean active = new AtomicBoolean(true);
         private final AtomicBoolean truncated = new AtomicBoolean(false);
-        private final EventListeners eventListeners;
+        private final ListenerRegistries listenerRegistries;
         /**
          * 在 {@link  ConcurrencyKind#LOCKED} 模式下, 这个锁会初始化赋值
          */
         private ReentrantLock lock;
 
 
-        public SafeListener(Listener<E> delegate, EventListeners eventListeners) {
+        public SafeListener(Listener<E> delegate, ListenerRegistries listenerRegistries) {
             this.delegate = delegate;
-            this.eventListeners = eventListeners;
+            this.listenerRegistries = listenerRegistries;
             log = LogFactory.getLog(delegate.getClass());
             switch (concurrencyKind()) {
                 case CONCURRENT -> lock = null;
@@ -283,7 +282,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
          */
         void remove() {
             active.set(false);
-            eventListeners.removeListener(this);
+            listenerRegistries.removeListener(this);
         }
 
         /**
@@ -324,7 +323,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 return ListenerStatus.TRUNCATED;
             } finally {
                 if (!active.get()) {
-                    eventListeners.removeListener(this);
+                    listenerRegistries.removeListener(this);
                 }
             }
         }

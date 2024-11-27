@@ -15,10 +15,10 @@ import java.util.stream.Collectors;
  * @author Erzbir
  * @since 1.0.0
  */
-public final class EventListeners {
+public final class ListenerRegistries {
     private final EnumMap<Listener.Priority, List<ListenerRegistry>> listeners = new EnumMap<>(Listener.Priority.class);
 
-    public EventListeners() {
+    public ListenerRegistries() {
         listeners.put(Listener.Priority.HIGH, Collections.synchronizedList(new ArrayList<>()));
         listeners.put(Listener.Priority.LOW, Collections.synchronizedList(new ArrayList<>()));
         listeners.put(Listener.Priority.NORMAL, Collections.synchronizedList(new ArrayList<>()));

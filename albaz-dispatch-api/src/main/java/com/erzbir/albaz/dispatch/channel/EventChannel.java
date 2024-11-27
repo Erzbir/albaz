@@ -27,9 +27,6 @@ import java.util.function.Predicate;
  * 可以通过 {@link #cancel()}, {@link #close()}, {@link #open()} 控制通道的开关
  * </p>
  *
- * <p>
- * 监听回调最终会由 {@link ListenerInvoker} 执行, 可以自定义 {@link ListenerInvoker} 实现功能扩展, 推荐用代理包装的形式
- * </p>
  *
  * <p>
  * 如果无需使用调度器, 可以直接使用调用 {@link #broadcast(Event)} 方法来广播事件
@@ -38,14 +35,12 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @see ListenerContainer
  * @see Interceptor
- * @see ListenerInvoker
  * @since 1.0.0
  */
 public abstract class EventChannel<E extends Event> implements ListenerContainer, Cancelable {
     protected Class<E> baseEventClass;
     protected List<Interceptor<Listener<E>>> interceptors = new ArrayList<>();
     protected AtomicBoolean activated = new AtomicBoolean(true);
-    protected ListenerInvoker listenerInvoker = new InterceptorInvoker();
 
     public EventChannel(Class<E> baseEventClass) {
         this.baseEventClass = baseEventClass;
@@ -53,14 +48,6 @@ public abstract class EventChannel<E extends Event> implements ListenerContainer
 
     public Class<E> getBaseEventClass() {
         return baseEventClass;
-    }
-
-    public ListenerInvoker getListenerInvoker() {
-        return listenerInvoker;
-    }
-
-    public void setListenerInvoker(ListenerInvoker listenerInvoker) {
-        this.listenerInvoker = listenerInvoker;
     }
 
     /**
@@ -187,4 +174,5 @@ public abstract class EventChannel<E extends Event> implements ListenerContainer
     public boolean isCanceled() {
         return !activated.get();
     }
+
 }

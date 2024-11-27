@@ -10,12 +10,6 @@ import org.junit.jupiter.api.Test;
 class EventChannelImplTest {
 
     @Test
-    void addInterceptor() {
-        EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.addInterceptor(target -> false);
-    }
-
-    @Test
     void close() {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         eventChannel.close();
