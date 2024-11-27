@@ -5,7 +5,7 @@ package com.erzbir.albaz.plugin;
  * @since 1.0.0
  */
 public class PluginWrapper implements Plugin {
-    private Plugin delegate;
+    private final Plugin delegate;
     private final Object lock = new Object();
 
     public PluginWrapper(Plugin plugin) {
