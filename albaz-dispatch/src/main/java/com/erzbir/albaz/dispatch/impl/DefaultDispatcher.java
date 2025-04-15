@@ -6,6 +6,8 @@ import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 import java.util.ServiceLoader;
 
@@ -14,12 +16,14 @@ import java.util.ServiceLoader;
  * @since 1.0.0
  */
 public final class DefaultDispatcher implements EventDispatcher {
+    private static final Log log = LogFactory.getLog(DefaultDispatcher.class);
     public static final DefaultDispatcher INSTANCE = new DefaultDispatcher();
-    private final EventDispatcher delegate;
+    private EventDispatcher delegate;
 
     private DefaultDispatcher() {
         delegate = ServiceLoader.load(EventDispatcherProvider.class).iterator().next().getInstance();
         if (delegate == null) {
+            log.error("No EventDispatcherProvider found");
             throw new IllegalStateException("No EventDispatcher found");
         }
     }

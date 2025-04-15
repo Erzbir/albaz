@@ -6,6 +6,8 @@ import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerHandle;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import com.erzbir.albaz.dispatch.spi.GlobalEventChannelProvider;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 import java.util.ServiceLoader;
 import java.util.function.Consumer;
@@ -17,6 +19,7 @@ import java.util.function.Predicate;
  * @since 1.0.0
  */
 public final class GlobalEventChannel extends EventChannel<Event> {
+    private static final Log log = LogFactory.getLog(GlobalEventChannel.class);
     public final static GlobalEventChannel INSTANCE = new GlobalEventChannel();
     private final EventChannel<Event> delegate;
 
@@ -24,6 +27,7 @@ public final class GlobalEventChannel extends EventChannel<Event> {
         super(Event.class);
         delegate = ServiceLoader.load(GlobalEventChannelProvider.class).iterator().next().getInstance();
         if (delegate == null) {
+            log.error("No GlobalEventChannelProvider found");
             throw new IllegalStateException("No GlobalChannel found");
         }
     }
