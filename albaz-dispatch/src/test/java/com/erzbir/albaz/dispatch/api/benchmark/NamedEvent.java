@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch.api;
+package com.erzbir.albaz.dispatch.api.benchmark;
 
 
 import com.erzbir.albaz.dispatch.event.AbstractEvent;
@@ -22,7 +22,7 @@ class TestNamedEvent extends AbstractEvent implements NamedEvent {
 
     @Override
     public Object getSource() {
-        return null;
+        return source;
     }
 
     @Override

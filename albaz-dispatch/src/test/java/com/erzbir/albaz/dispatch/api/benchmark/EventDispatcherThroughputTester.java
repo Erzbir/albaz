@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch.api;
+package com.erzbir.albaz.dispatch.api.benchmark;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.impl.GlobalEventChannel;

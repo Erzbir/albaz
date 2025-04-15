@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch.api;
+package com.erzbir.albaz.dispatch.api.benchmark;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
@@ -28,17 +28,17 @@ class DefaultDispatcherTest {
             log.info("Name: " + event.getName());
             return ListenerStatus.CONTINUE;
         });
-        EventChannel<Event> filter = GlobalEventChannel.INSTANCE.filter(event -> event instanceof TestEvent);
+        EventChannel<Event> filter = GlobalEventChannel.INSTANCE.filter(event -> event instanceof RunEvent);
         filter.subscribe(Event.class, event -> {
-            if (event instanceof TestEvent) {
-                log.info(((TestEvent) event).getName());
+            if (event instanceof RunEvent) {
+                log.info(((RunEvent) event).getName());
             }
             return ListenerStatus.CONTINUE;
         });
         Listener<TestNamedEvent> listener = new Listener<>() {
             @Override
             public ListenerStatus onEvent(TestNamedEvent event) {
-                log.info("this is a TestNamedEvent 2222");
+                log.info("this is a TestNamedEvent: " + event.getName());
                 return ListenerStatus.STOP;
             }
 
@@ -50,8 +50,8 @@ class DefaultDispatcherTest {
         Listener<TestNamedEvent> listener2 = new Listener<>() {
             @Override
             public ListenerStatus onEvent(TestNamedEvent event) {
-                log.info("this is a TestNamedEvent 33333");
-                return ListenerStatus.STOP;
+                log.info("this is a TestNamedEvent: " + event.getName());
+                return ListenerStatus.CONTINUE;
             }
 
             @Override
@@ -60,22 +60,22 @@ class DefaultDispatcherTest {
             }
         };
         GlobalEventChannel.INSTANCE.subscribe(TestNamedEvent.class, event -> {
-            log.info("this is a TestNamedEvent");
+            log.info("this is a TestNamedEvent: " + event.getName());
             return ListenerStatus.STOP;
         });
         GlobalEventChannel.INSTANCE.registerListener(TestNamedEvent.class, listener);
         GlobalEventChannel.INSTANCE.registerListener(TestNamedEvent.class, listener2);
 
         GlobalEventChannel.INSTANCE.subscribe(Event.class, event -> {
-            log.info("this is an Event");
+            log.info("this is an Event: " + event.getSource());
             return ListenerStatus.CONTINUE;
         });
-        eventDispatcher.dispatch(new TestNamedEvent("this", "test3"), eventEventChannel);
+        eventDispatcher.dispatch(new TestNamedEvent(this, "test3"), eventEventChannel);
         for (int i = 0; i < 4; i++) {
-            eventDispatcher.dispatch(new TestNamedEvent("this", "test2"));
+            eventDispatcher.dispatch(new TestNamedEvent(this, "test2"));
 
         }
-        eventDispatcher.dispatch(new TestNamedEvent("this", "test5"), eventEventChannel);
+        eventDispatcher.dispatch(new TestNamedEvent(this, "test5"), eventEventChannel);
     }
 
     void dispatchJoin(EventDispatcher eventDispatcher) throws InterruptedException {
