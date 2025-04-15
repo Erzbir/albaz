@@ -28,11 +28,11 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     private final int batchSize = 5;
     // 同步块的锁, 用于控制线程
     private final Object dispatchLock = new Object();
-    private Thread dispatcherThread;
+    private volatile Thread dispatcherThread;
     /**
      * 守卫线程, 用于调用 {@link #join()} 后分发线程进入等待, 并且保证主线程不退出, 在调用 {@link #cancel()} 后退出
      */
-    private Thread guardThread;
+    private volatile Thread guardThread;
     // 事件缓存队列
     private final PriorityBlockingQueue<Event> eventQueue = new PriorityBlockingQueue<>(10, Comparator.comparingInt(Event::getPriority));
     // 暂停线程标志位
@@ -51,11 +51,10 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     public void start() {
         if (isActive()) {
             return;
-        } else {
-            super.start();
         }
         Runnable runnable = () -> {
-            while (isActive() && !Thread.currentThread().isInterrupted()) {
+            super.start();
+            while (isActive() && !Thread.currentThread().isInterrupted() && dispatcherThread != null) {
                 try {
                     // 如果队列为空则暂让线程等待
                     if (eventQueue.isEmpty()) {
@@ -84,6 +83,9 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
      * 恢复轮询
      */
     private void resume() {
+        if (!isActive()) {
+            return;
+        }
         synchronized (dispatchLock) {
             suspended.set(false);
             dispatchLock.notifyAll();
@@ -94,6 +96,9 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
      * 暂停轮询
      */
     private void suspend() throws InterruptedException {
+        if (!isActive()) {
+            return;
+        }
         synchronized (dispatchLock) {
             suspended.set(true);
             dispatchLock.wait();
@@ -103,10 +108,8 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     private Runnable createDispatchTask(EventChannel<Event> channel, Event event) {
         return () -> {
             try {
-                if (event instanceof CancelableEvent cancelableEvent) {
-                    if (cancelableEvent.isCanceled()) {
-                        return;
-                    }
+                if (event instanceof CancelableEvent cancelableEvent && cancelableEvent.isCanceled()) {
+                    return;
                 }
                 if (!event.isIntercepted()) {
                     log.debug("Dispatching event: " + event + " to channel: " + channel.getClass().getSimpleName());
@@ -120,6 +123,9 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
 
     @Override
     public void join() {
+        if (dispatcherThread == null) {
+            return;
+        }
         try {
             dispatcherThread.join();
         } catch (InterruptedException e) {
@@ -129,6 +135,9 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
 
     @Override
     public void join(long timeout) {
+        if (dispatcherThread == null) {
+            return;
+        }
         try {
             dispatcherThread.join(timeout);
         } catch (InterruptedException e) {
@@ -142,7 +151,7 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
             try {
                 suspend();
             } catch (InterruptedException e) {
-                log.error("Dispatching error when join thread: " + dispatcherThread);
+                log.error("Dispatching error when await thread: " + dispatcherThread);
             }
         }, "Dispatch-Thread-Guard");
         guardThread.start();
@@ -150,17 +159,22 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
 
     @Override
     public void cancel() {
-        if (isActive()) {
+        if (!isActive()) {
             return;
-        } else {
-            super.start();
         }
+        activated.set(false);
         eventQueue.clear();
         // 这里需要唤醒等待的线程, 否则线程永远都不会结束
         resume();
-        dispatcherThread.interrupt();
-        guardThread.interrupt();
-        dispatcherThread = null;
-        guardThread = null;
+
+        if (dispatcherThread != null) {
+            dispatcherThread.interrupt();
+            dispatcherThread = null;
+        }
+
+        if (guardThread != null) {
+            guardThread.interrupt();
+            guardThread = null;
+        }
     }
 }
