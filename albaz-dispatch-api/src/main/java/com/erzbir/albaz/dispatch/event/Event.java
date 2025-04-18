@@ -28,7 +28,7 @@ public interface Event {
     void intercepted();
 
     /**
-     * @return 优先级
+     * @return 优先级, 值越小优先级越大
      */
     int getPriority();
 
