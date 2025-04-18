@@ -11,6 +11,9 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
+ * <p>
+ *     全局事件通道, 总线
+ * </p>
  * @author Erzbir
  * @since 1.0.0
  */
