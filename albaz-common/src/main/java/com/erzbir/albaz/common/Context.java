@@ -100,9 +100,8 @@ class MapContext extends LinkedHashMap<Object, Object> implements Context {
         if (!hasKey(key)) {
             return this;
         }
-        MapContext contextN = (MapContext) this.clone();
-        contextN.remove(key);
-        return contextN;
+        remove(key);
+        return this;
     }
 
     @Override
