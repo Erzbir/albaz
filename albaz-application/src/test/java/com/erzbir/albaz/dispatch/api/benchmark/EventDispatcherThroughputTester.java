@@ -1,9 +1,10 @@
 package com.erzbir.albaz.dispatch.api.benchmark;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
-import com.erzbir.albaz.dispatch.internal.GlobalEventChannel;
-import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
+import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -14,7 +15,7 @@ public class EventDispatcherThroughputTester {
 
     private final AtomicLong totalExecutionTime = new AtomicLong(0);
     private final AtomicLong eventsProcessed = new AtomicLong(0);
-    private final EventDispatcher eventDispatcher = new PollingEventDispatcher();
+    private final EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance();
 
     public static void main(String[] args) throws InterruptedException {
         EventDispatcherThroughputTester tester = new EventDispatcherThroughputTester();
@@ -24,10 +25,11 @@ public class EventDispatcherThroughputTester {
 
     public void measureThroughput(int durationSeconds) throws InterruptedException {
         eventDispatcher.start();
+        EventChannel<Event> eventChannel = eventDispatcher.getEventChannel();
         ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
         long startTime = System.currentTimeMillis();
         long endTime = startTime + durationSeconds * 1000L;
-        GlobalEventChannel.INSTANCE.subscribe(TestNamedEvent.class, event -> {
+        eventChannel.subscribe(TestNamedEvent.class, event -> {
             try {
                 Thread.sleep(1);
             } catch (InterruptedException e) {

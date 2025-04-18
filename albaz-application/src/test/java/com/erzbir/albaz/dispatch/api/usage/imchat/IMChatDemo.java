@@ -3,9 +3,9 @@ package com.erzbir.albaz.dispatch.api.usage.imchat;
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
-import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
+import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
 
 import java.io.IOException;
 import java.io.PipedOutputStream;
@@ -70,7 +70,7 @@ public class IMChatDemo {
 
     public static void main(String[] args) throws IOException, InterruptedException {
         IMChatDemo IMChatDemo = new IMChatDemo();
-        EventDispatcher eventDispatcher = new PollingEventDispatcher();
+        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance();
 
         try {
             IMChatDemo.demoRun(eventDispatcher);
