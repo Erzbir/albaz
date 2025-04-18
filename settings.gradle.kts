@@ -9,3 +9,6 @@ include("plugin-test")
 include("albaz-dispatch-core")
 include("albaz-dispatch-api")
 include("albaz-jcl")
+
+include("albaz-plugin-api")
+include("albaz-plugin-core")

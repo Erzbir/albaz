@@ -6,6 +6,7 @@
  * @author Erzbir
  * @since 1.0.0
  */
-module albaz.plugin {
+module albaz.plugin.core {
     requires albaz.plugin.api;
+    requires albaz.jcl;
 }

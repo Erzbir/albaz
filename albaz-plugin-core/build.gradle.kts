@@ -1,4 +1,4 @@
 dependencies {
     implementation(project(":albaz-plugin-api"))
-    runtimeOnly(project(":albaz-plugin-core"))
+    implementation(project(":albaz-jcl"))
 }
