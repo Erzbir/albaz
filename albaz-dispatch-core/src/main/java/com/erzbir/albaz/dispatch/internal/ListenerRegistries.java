@@ -3,8 +3,6 @@ package com.erzbir.albaz.dispatch.internal;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -20,9 +18,9 @@ public final class ListenerRegistries {
     private final EnumMap<Listener.Priority, List<ListenerRegistry>> listeners = new EnumMap<>(Listener.Priority.class);
 
     public ListenerRegistries() {
-        listeners.put(Listener.Priority.HIGH, Collections.synchronizedList(new ArrayList<>()));
-        listeners.put(Listener.Priority.LOW, Collections.synchronizedList(new ArrayList<>()));
-        listeners.put(Listener.Priority.NORMAL, Collections.synchronizedList(new ArrayList<>()));
+        listeners.put(Listener.Priority.HIGH, new CopyOnWriteArrayList<>());
+        listeners.put(Listener.Priority.LOW, new CopyOnWriteArrayList<>());
+        listeners.put(Listener.Priority.NORMAL, new CopyOnWriteArrayList<>());
     }
 
     public void addListener(ListenerRegistry registry) {
