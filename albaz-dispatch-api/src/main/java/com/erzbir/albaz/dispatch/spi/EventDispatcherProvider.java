@@ -29,7 +29,7 @@ public class EventDispatcherProvider implements KVProvider<String, EventDispatch
     public EventDispatcher getInstance(String key) {
         EventDispatcher dispatcher = DISPATCHERS.get(key);
         if (dispatcher == null) {
-            throw new IllegalArgumentException("No EventDispatcher '" + key + "' found.");
+            throw new IllegalArgumentException("No EventDispatcher '" + key + "' found");
         }
         return dispatcher;
     }
@@ -49,7 +49,7 @@ public class EventDispatcherProvider implements KVProvider<String, EventDispatch
         for (EventDispatcher dispatcher : DISPATCHERS.values()) {
             return dispatcher;
         }
-        throw new IllegalArgumentException("No EventDispatchers found.");
+        throw new IllegalArgumentException("No EventDispatchers found");
     }
 
     @Override
