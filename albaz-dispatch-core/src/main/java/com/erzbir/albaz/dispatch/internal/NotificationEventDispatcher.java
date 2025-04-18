@@ -7,6 +7,8 @@ import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * 基于通知的 {@link EventDispatcher}
  *
@@ -16,20 +18,18 @@ import com.erzbir.albaz.logging.LogFactory;
 public final class NotificationEventDispatcher extends AbstractEventDispatcher implements EventDispatcher {
     private final Log log = LogFactory.getLog(NotificationEventDispatcher.class);
     private final Object lock = new Object();
-    private volatile int count = 0;
+    private final AtomicInteger count = new AtomicInteger(0);
     private Thread guardThread;
 
     @Override
     protected <E extends Event> void dispatchTo(E event, EventChannel<E> channel) {
-        synchronized (lock) {
-            count++;
-        }
         Thread.ofVirtual()
                 .name("Dispatch-Thread-" + Thread.currentThread().threadId())
                 .start(createDispatchTask(channel, event));
     }
 
     private <E extends Event> Runnable createDispatchTask(EventChannel<E> channel, E event) {
+        count.getAndIncrement();
         return () -> {
             try {
                 if (event instanceof CancelableEvent cancelableEvent) {
@@ -42,34 +42,36 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
             } catch (Throwable e) {
                 log.error("Dispatching to channel: " + channel.getClass().getSimpleName() + " error: " + e.getMessage());
             } finally {
-                synchronized (lock) {
-                    count--;
-                }
+                taskCompleted();
             }
         };
     }
 
-    @Override
-    public void join() {
-        try {
-            while (count > 0) {
-                Thread.sleep(10);
+    private void taskCompleted() {
+        int remaining = count.decrementAndGet();
+        if (remaining == 0) {
+            synchronized (lock) {
+                lock.notifyAll();
             }
-        } catch (InterruptedException e) {
-            log.error("Dispatching error when join thread: " + guardThread);
         }
     }
 
     @Override
+    public void join() {
+        join(0L);
+
+    }
+
+    @Override
     public void join(long timeout) {
-        long sleepTime = 10;
-        int times = (int) (timeout % sleepTime);
-        try {
-            while (times-- > 0) {
-                Thread.sleep(10);
+        synchronized (lock) {
+            try {
+                while (count.get() > 0) {
+                    lock.wait(timeout);
+                }
+            } catch (InterruptedException e) {
+                log.error("Dispatching error when join thread: " + Thread.currentThread().getName());
             }
-        } catch (InterruptedException e) {
-            log.error("Dispatching error when join thread: " + guardThread);
         }
     }
 
@@ -81,10 +83,13 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
 
     @Override
     public void cancel() {
-        super.cancel();
+        activated.set(false);
+
         synchronized (lock) {
             lock.notifyAll();
         }
-        guardThread.interrupt();
+        if (guardThread != null) {
+            guardThread.interrupt();
+        }
     }
 }
