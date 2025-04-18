@@ -3,10 +3,9 @@ package com.erzbir.albaz.dispatch.api.benchmark;
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
-import com.erzbir.albaz.dispatch.internal.GlobalEventChannel;
-import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
+import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 
@@ -16,19 +15,20 @@ class DefaultDispatcherTest {
 
     public static void main(String[] args) throws InterruptedException {
         DefaultDispatcherTest defaultDispatcherTest = new DefaultDispatcherTest();
-        EventDispatcher eventDispatcher = new PollingEventDispatcher();
+        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance();
         defaultDispatcherTest.dispatchJoin(eventDispatcher);
         System.out.println(eventDispatcher);
     }
 
     void dispatch(EventDispatcher eventDispatcher) throws InterruptedException {
         eventDispatcher.start();
-        EventChannel<NamedEvent> eventEventChannel = GlobalEventChannel.INSTANCE.filterInstance(NamedEvent.class);
+        EventChannel<Event> eventChannel = eventDispatcher.getEventChannel();
+        EventChannel<NamedEvent> eventEventChannel = eventChannel.filterInstance(NamedEvent.class);
         eventEventChannel.subscribe(NamedEvent.class, event -> {
             log.info("Name: " + event.getName());
             return ListenerStatus.CONTINUE;
         });
-        EventChannel<Event> filter = GlobalEventChannel.INSTANCE.filter(event -> event instanceof RunEvent);
+        EventChannel<Event> filter = eventChannel.filter(event -> event instanceof RunEvent);
         filter.subscribe(Event.class, event -> {
             if (event instanceof RunEvent) {
                 log.info(((RunEvent) event).getName());
@@ -59,14 +59,14 @@ class DefaultDispatcherTest {
                 return ConcurrencyKind.LOCKED;
             }
         };
-        GlobalEventChannel.INSTANCE.subscribe(TestNamedEvent.class, event -> {
+        eventChannel.subscribe(TestNamedEvent.class, event -> {
             log.info("this is a TestNamedEvent: " + event.getName());
             return ListenerStatus.STOP;
         });
-        GlobalEventChannel.INSTANCE.registerListener(TestNamedEvent.class, listener);
-        GlobalEventChannel.INSTANCE.registerListener(TestNamedEvent.class, listener2);
+        eventChannel.registerListener(TestNamedEvent.class, listener);
+        eventChannel.registerListener(TestNamedEvent.class, listener2);
 
-        GlobalEventChannel.INSTANCE.subscribe(Event.class, event -> {
+        eventChannel.subscribe(Event.class, event -> {
             log.info("this is an Event: " + event.getSource());
             return ListenerStatus.CONTINUE;
         });

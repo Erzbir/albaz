@@ -2,7 +2,6 @@ rootProject.name = "albaz"
 include("albaz-context")
 include("albaz-plugin")
 include("albaz-application")
-include("albaz-dispatch")
 include("albaz-util")
 include("albaz-cglib")
 include("albaz-common")
