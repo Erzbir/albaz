@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -59,7 +60,7 @@ public final class ListenerRegistries {
     }
 
     public boolean isEmpty() {
-        return listeners.values().stream().map(List::isEmpty).reduce(Boolean::logicalOr).orElse(true);
+        return listeners.values().stream().map(List::isEmpty).reduce(Boolean::logicalAnd).orElse(true);
     }
 
     public int size() {
