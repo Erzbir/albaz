@@ -20,7 +20,7 @@ import java.util.function.Predicate;
 
 /**
  * <p>
- * 事件通道的内部实现, 实现了 {@link Listener.ConcurrencyKind}, {@link Listener.TriggerType} 以及 {@link Listener.Priority}
+ * {@link EventChannel} 的内部实现, 实现了 {@link Listener.ConcurrencyKind}, {@link Listener.TriggerType} 以及 {@link Listener.Priority}
  * </p>
  * <p>
  * 基于委派链的设计, 所有广播最终都会委托到 {@link EventChannelDispatcher} 中. 这种委托是链式的,
@@ -34,7 +34,11 @@ import java.util.function.Predicate;
  * </p>
  *
  * <p>
- *     TODO 重构为用 forward 实现过滤
+ * 在触发监听时根据 {@link Listener.ConcurrencyKind} 来决定并发时是否加锁
+ * </p>
+ *
+ * <p>
+ *     TODO: 重构为用 forward 实现过滤
  * </p>
  *
  * @author Erzbir
@@ -57,7 +61,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
 
     /**
      * <p>
-     * 此方法会根据 {@link Listener.ConcurrencyKind} 来决定并发时是否加锁
+     * 不会广播被拦截或是被取消的事件
      * </p>
      *
      * @param event 广播的事件
@@ -68,6 +72,10 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         if (!(event instanceof AbstractEvent)) throw new IllegalArgumentException("Event must extend AbstractEvent");
         if (event.isIntercepted()) {
             log.debug("Event: {" + event + "} was intercepted, cancel broadcast");
+            return;
+        }
+        if (((AbstractEvent) event).isCanceled()) {
+            log.debug("Event: {" + event + "} was canceled, cancel broadcast");
             return;
         }
         if (listenerRegistries.isEmpty()) {
@@ -221,6 +229,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             }
             SafeListener safeListener = listenerRef.get();
             if (safeListener != null) {
+                safeListener.inactive();
                 safeListener.remove();
             }
             listenerRef = null;
@@ -235,7 +244,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
     /**
      * <p>
      * 一个安全监听器, 通过 {@link EventChannel} 注册的所有监听, 最终都会被包装成此类对象.
-     * 捕获所有异常.
+     * 捕获所有异常, 提供生命周期管理.
      * </p>
      *
      * <p>
@@ -281,7 +290,6 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
          * 仅内部使用, 在需要的时候可以直接删除监听器
          */
         void remove() {
-            active.set(false);
             listenerRegistries.removeListener(this);
         }
 
@@ -323,7 +331,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 return ListenerStatus.TRUNCATED;
             } finally {
                 if (!active.get()) {
-                    listenerRegistries.removeListener(this);
+                    remove();
                 }
             }
         }

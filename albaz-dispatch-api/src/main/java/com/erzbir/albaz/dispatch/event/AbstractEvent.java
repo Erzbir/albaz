@@ -1,8 +1,6 @@
 package com.erzbir.albaz.dispatch.event;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Erzbir
@@ -48,7 +46,7 @@ public abstract class AbstractEvent implements Event {
     }
 
     public boolean isCanceled() {
-        if (!(this instanceof CancelableEvent)) throw new UnsupportedOperationException();
+        if (!(this instanceof CancelableEvent)) return false;
         return canceled.get();
     }
 
