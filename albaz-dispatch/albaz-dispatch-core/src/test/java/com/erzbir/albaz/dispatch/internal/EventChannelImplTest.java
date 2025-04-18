@@ -98,6 +98,14 @@ class EventChannelImplTest {
             Assertions.assertEquals(TestEvent.class, event.getClass());
             return true;
         });
+        testEventEventChannel.registerListener(TestEvent.class, new Listener<TestEvent>() {
+            @Override
+            public ListenerStatus onEvent(TestEvent event) {
+                Assertions.assertEquals(TestEvent.class, event.getClass());
+                return ListenerStatus.STOP;
+            }
+        });
+        testEventEventChannel.broadcast(new TestEvent(this));
         Assertions.assertEquals(TestEvent.class, testEventEventChannel.getBaseEventClass());
         Assertions.assertEquals(TestEvent.class, testEventEventChannel1.getBaseEventClass());
     }
