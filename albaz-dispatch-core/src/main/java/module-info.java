@@ -10,5 +10,4 @@ module albaz.dispatch.core {
     requires transitive albaz.dispatch.api;
     requires transitive albaz.common;
     requires albaz.jcl;
-    exports com.erzbir.albaz.dispatch.internal to albaz.dispatch;
 }
