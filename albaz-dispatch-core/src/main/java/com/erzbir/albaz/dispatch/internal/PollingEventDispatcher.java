@@ -17,6 +17,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>
  * 基于轮询的 {@link EventDispatcher}, 会启动一个虚拟线程轮询拉取事件
  * </p>
+ * <p>
+ * 会根据 {@link Event#getPriority()} 以及 {@link Event#timestamp()} 将 {@link Event} 放入内部的 {@link #eventQueue}
+ * </p>
  *
  * @author Erzbir
  * @see EventDispatcher
@@ -34,9 +37,21 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
      */
     private volatile Thread guardThread;
     // 事件缓存队列
-    private final PriorityBlockingQueue<Event> eventQueue = new PriorityBlockingQueue<>(10, Comparator.comparingInt(Event::getPriority));
+    private final PriorityBlockingQueue<Event> eventQueue = new PriorityBlockingQueue<>(10, new EventComparator());
     // 暂停线程标志位
     private final AtomicBoolean suspended = new AtomicBoolean(false);
+
+    private static class EventComparator implements Comparator<Event> {
+        @Override
+        public int compare(Event e1, Event e2) {
+            // 先按优先级排 (数字越小优先级越高)
+            if (e1.getPriority() != e2.getPriority()) {
+                return Integer.compare(e1.getPriority(), e2.getPriority());
+            }
+            // 优先级相同, 再按时间戳排 (越早越靠前)
+            return Long.compare(e1.timestamp(), e2.timestamp());
+        }
+    }
 
     @Override
     protected <E extends Event> void dispatchTo(E event, EventChannel<E> channel) {
