@@ -10,6 +10,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
 
 /**
  * <p>
@@ -38,9 +39,9 @@ public class ClassPluginLoader extends AbstractPluginLoader implements PluginLoa
             String name = file.getName();
             String className = name.substring(0, name.lastIndexOf('.'));
             Class<?> pluginClass = classLoader.defineClass(className, bytes);
-            MethodHandles.Lookup lookup = MethodHandles.lookup();
-            MethodHandle instanceGetter = lookup.findStaticGetter(pluginClass, "INSTANCE", pluginClass);
-            Object instance = instanceGetter.invoke();
+            Field instanceField = pluginClass.getDeclaredField("INSTANCE");
+            instanceField.setAccessible(true);
+            Object instance = instanceField.get(null);
             return (Plugin) instance;
         } catch (Throwable e) {
             throw new PluginIllegalException(e);
