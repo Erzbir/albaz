@@ -30,7 +30,7 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     private final Object dispatchLock = new Object();
     private volatile Thread dispatcherThread;
     /**
-     * 守卫线程, 用于调用 {@link #join()} 后分发线程进入等待, 并且保证主线程不退出, 在调用 {@link #cancel()} 后退出
+     * 守卫线程, 用于调用 {@link #await()} 后分发线程进入等待, 并且保证主线程不退出, 在调用 {@link #cancel()} 后退出
      */
     private volatile Thread guardThread;
     // 事件缓存队列
