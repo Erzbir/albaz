@@ -23,6 +23,9 @@ public class PluginDescription {
     public PluginDescription(String id, String version) {
         this.id = id;
         this.version = version;
+        this.name = "";
+        this.desc = "";
+        this.author = "";
     }
 
     public String getId() {
@@ -75,6 +78,9 @@ public class PluginDescription {
         public Builder(String id, String version) {
             this.id = id;
             this.version = version;
+            this.name = "";
+            this.desc = "";
+            this.author = "";
         }
 
 
@@ -106,5 +112,16 @@ public class PluginDescription {
         public PluginDescription build() {
             return new PluginDescription(this);
         }
+    }
+
+    @Override
+    public String toString() {
+        return "PluginDescription{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", desc='" + desc + '\'' +
+                ", author='" + author + '\'' +
+                ", version='" + version + '\'' +
+                '}';
     }
 }
