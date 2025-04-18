@@ -1,5 +1,18 @@
 dependencies {
-    testImplementation(project(":albaz-plugin:albaz-plugin-api"))
-    testRuntimeOnly(project(":albaz-plugin:albaz-plugin-core"))
-    testImplementation(project(":albaz-jcl"))
+    implementation(project(":albaz-plugin:albaz-plugin-api"))
+    runtimeOnly(project(":albaz-plugin:albaz-plugin-core"))
+    implementation(project(":albaz-jcl"))
+}
+
+tasks.withType<JavaExec> {
+    jvmArgs("-verbose:class")
+}
+
+tasks.register<JavaExec>("Hot Load Debug") {
+    jvmArgs("-verbose:class")
+}
+
+tasks.test {
+    useJUnitPlatform()
+    jvmArgs("-verbose:class")
 }

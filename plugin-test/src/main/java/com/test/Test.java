@@ -1,4 +1,4 @@
-package com.erzbir;
+package com.test;
 
 /**
  * @author Erzbir

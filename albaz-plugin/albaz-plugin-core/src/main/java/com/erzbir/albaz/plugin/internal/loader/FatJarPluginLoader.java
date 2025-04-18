@@ -5,6 +5,8 @@ import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.PluginLoader;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
+import com.erzbir.albaz.plugin.exception.PluginNotSupportException;
+import com.erzbir.albaz.plugin.internal.FileTypeDetector;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,7 +18,7 @@ import java.util.jar.JarFile;
 
 /**
  * <p>
- * 通过 Jar 包全量加载, 将其中所有依赖都加载进来
+ * 全量加载 Jar 包插件, 将其中所有依赖都加载进来
  * </p>
  *
  * @author Erzbir
@@ -24,21 +26,22 @@ import java.util.jar.JarFile;
  * @see PluginLoader
  * @since 1.0.0
  */
-public class JarPluginLoader extends AbstractPluginLoader implements PluginLoader {
+public class FatJarPluginLoader extends AbstractPluginLoader implements PluginLoader {
     protected final static String SERVICE_PATH = "META-INF/services/com.erzbir.albaz.plugin.Plugin";
-    private final Log log = LogFactory.getLog(JarPluginLoader.class);
+    private final Log log = LogFactory.getLog(FatJarPluginLoader.class);
 
-    public JarPluginLoader(ClassLoader parent) {
+    public FatJarPluginLoader(ClassLoader parent) {
         super(parent);
     }
 
     @Override
-    public Plugin load(File file) throws PluginIllegalException {
-        if (!file.isFile() || !file.getName().endsWith(".jar") || !file.canRead()) {
-            throw new PluginIllegalException(String.format("%s is not a jar file or can't read", file.getName()));
-        }
+    protected Plugin resolve(File file) throws PluginIllegalException {
         JarFile jarFile;
         try {
+            FileTypeDetector.FileType detect = FileTypeDetector.detect(file);
+            if (!file.getName().endsWith(".jar") || !detect.equals(FileTypeDetector.FileType.JAR)) {
+                throw new PluginNotSupportException("The file " + file.getAbsolutePath() + " is not a jar file");
+            }
             jarFile = new JarFile(file);
             classLoader.addFile(file);
         } catch (IOException e) {

@@ -1,4 +1,4 @@
-package com.erzbir;
+package com.test;
 
 import com.erzbir.albaz.plugin.JavaPlugin;
 import com.erzbir.albaz.plugin.PluginDescription;

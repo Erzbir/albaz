@@ -1,19 +1,18 @@
-package com.erzbir.albaz.plugin.internal;
+package com.erzbir.albaz.plugin.internal.loader;
 
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
-import com.erzbir.albaz.plugin.internal.loader.JarPluginLoader;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
 
-class JarPluginLoaderTest {
+class SpiPluginLoaderTest {
     String file = "plugins/plugin-test-1.0.0-all.jar";
 
     @Test
     void load() throws PluginIllegalException {
-        JarPluginLoader loader = new JarPluginLoader(getClass().getClassLoader());
+        SpiPluginLoader loader = new SpiPluginLoader(getClass().getClassLoader());
         Plugin plugin = loader.load(new File(file));
         Assertions.assertNotNull(plugin);
         plugin.onLoad();

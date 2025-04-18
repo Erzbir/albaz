@@ -4,7 +4,9 @@ import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.*;
 import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
-import com.erzbir.albaz.plugin.internal.loader.JarPluginLoader;
+import com.erzbir.albaz.plugin.exception.PluginNotSupportException;
+import com.erzbir.albaz.plugin.internal.loader.ClassPluginLoader;
+import com.erzbir.albaz.plugin.internal.loader.FatJarPluginLoader;
 import com.erzbir.albaz.plugin.internal.loader.SpiPluginLoader;
 
 import java.io.File;
@@ -49,13 +51,13 @@ public class JavaPluginManager implements PluginManager {
 
     @Override
     public void loadPlugins(String pluginDir) {
-        File[] jars = new File(pluginDir).listFiles((dir, name) -> name.endsWith(".jar"));
-        if (jars == null) {
+        File[] plugins = new File(pluginDir).listFiles((dir, name) -> name.endsWith(".jar") || name.endsWith(".class"));
+        if (plugins == null || plugins.length == 0) {
             log.warn("No plugins found in " + pluginDir);
             return;
         }
-        for (File jar : jars) {
-            loadPlugin(jar);
+        for (File plugin : plugins) {
+            loadPlugin(plugin);
         }
     }
 
@@ -64,10 +66,18 @@ public class JavaPluginManager implements PluginManager {
     public void loadPlugin(File file) {
         try {
             PluginLoader pluginLoader;
-            if (isServiceLoad) {
-                pluginLoader = new SpiPluginLoader(getClass().getClassLoader());
-            } else {
-                pluginLoader = new JarPluginLoader(getClass().getClassLoader());
+            FileTypeDetector.FileType fileType = FileTypeDetector.detect(file);
+            switch (fileType) {
+                case FileTypeDetector.FileType.JAR -> {
+                    if (isServiceLoad) {
+                        pluginLoader = new SpiPluginLoader(getClass().getClassLoader());
+                    } else {
+                        pluginLoader = new FatJarPluginLoader(getClass().getClassLoader());
+                    }
+                }
+                case FileTypeDetector.FileType.CLASS ->
+                        pluginLoader = new ClassPluginLoader(getClass().getClassLoader());
+                default -> throw new PluginNotSupportException(file.getName() + " is not a valid plugin file");
             }
             Plugin plugin = pluginLoader.load(file);
             if (plugin == null) {

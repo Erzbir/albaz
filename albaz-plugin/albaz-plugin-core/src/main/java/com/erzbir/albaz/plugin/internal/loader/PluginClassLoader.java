@@ -68,6 +68,10 @@ public class PluginClassLoader extends URLClassLoader {
         throw new ClassNotFoundException(className);
     }
 
+    public Class<?> defineClass(String className, byte[] bytes) {
+        return defineClass(className, bytes, 0, bytes.length);
+    }
+
     @Override
     public void close() throws IOException {
         super.close();

@@ -1,7 +1,6 @@
-package com.erzbir.albaz.plugin;
+package com.erzbir.albaz.plugin.internal;
 
 import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
-import com.erzbir.albaz.plugin.internal.JavaPluginManager;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

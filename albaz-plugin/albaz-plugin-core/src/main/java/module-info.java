@@ -7,6 +7,7 @@
  * @since 1.0.0
  */
 module albaz.plugin.core {
+    uses com.erzbir.albaz.plugin.Plugin;
     requires albaz.plugin.api;
     requires albaz.jcl;
 }
