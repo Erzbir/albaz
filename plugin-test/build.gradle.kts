@@ -4,7 +4,7 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":albaz-plugin-api"))
+//    implementation(project(":albaz-plugin-api"))
     implementation("com.google.code.gson:gson:2.11.0")
 }
 
