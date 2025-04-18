@@ -7,17 +7,15 @@ public class TestClassPlugin extends JavaPlugin {
     public static TestClassPlugin INSTANCE = new TestClassPlugin();
 
     public TestClassPlugin() {
-        super(new PluginDescription.Builder("test", "0.0.1")
+        super(new PluginDescription.Builder("test.class", "0.0.1")
                 .author("Erzbir")
-                .desc("this is a test")
+                .desc("this is a class plugin test")
                 .build());
     }
 
     @Override
     public void onEnable() {
         System.out.println("Plugin enabled");
-        Test test = new Test();
-        test.say();
     }
 
     @Override
