@@ -3,7 +3,7 @@ package com.erzbir.albaz.dispatch.api.benchmark;
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
-import com.erzbir.albaz.dispatch.impl.GlobalEventChannel;
+import com.erzbir.albaz.dispatch.internal.GlobalEventChannel;
 import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;

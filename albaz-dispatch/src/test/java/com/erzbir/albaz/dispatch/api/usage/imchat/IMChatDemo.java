@@ -1,8 +1,8 @@
 package com.erzbir.albaz.dispatch.api.usage.imchat;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
-import com.erzbir.albaz.dispatch.impl.GlobalEventChannel;
-import com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher;
+import com.erzbir.albaz.dispatch.channel.EventChannel;
+import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.internal.PollingEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
@@ -40,11 +40,11 @@ public class IMChatDemo {
         };
 
         // Register with global channel
-        GlobalEventChannel globalEventChannel = GlobalEventChannel.INSTANCE;
-        globalEventChannel.registerListener(UserMessageEvent.class, userMessageEventListener);
+        EventChannel<Event> eventChannel = eventDispatcher.getEventChannel();
+        eventChannel.registerListener(UserMessageEvent.class, userMessageEventListener);
 
         // Register group message listener
-        globalEventChannel.registerListener(GroupMessageEvent.class, new Listener<>() {
+        eventChannel.registerListener(GroupMessageEvent.class, new Listener<>() {
             @Override
             public ConcurrencyKind concurrencyKind() {
                 // synchronized mode (when remove listener)

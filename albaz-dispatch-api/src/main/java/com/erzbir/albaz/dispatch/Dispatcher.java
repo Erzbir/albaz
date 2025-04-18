@@ -25,5 +25,4 @@ public interface Dispatcher {
      * 进入等待, 等待任务全部结束, 不会阻塞调用线程
      */
     void await();
-
 }

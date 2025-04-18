@@ -21,4 +21,6 @@ public interface EventDispatcher extends Dispatcher, Cancelable {
     <E extends Event> void dispatch(E event, EventChannel<E> channel);
 
     void addInterceptor(Interceptor<Event> interceptor);
+
+    EventChannel<Event> getEventChannel();
 }

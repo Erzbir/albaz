@@ -22,13 +22,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @since 1.0.0
  */
 public abstract class AbstractEventDispatcher implements EventDispatcher {
+    private final EventChannel<Event> globalEventChannel = GlobalEventChannel.INSTANCE;
     protected final List<Interceptor<Event>> eventDispatchInterceptors = new ArrayList<>();
     protected final AtomicBoolean activated = new AtomicBoolean(false);
     private final Log log = LogFactory.getLog(getClass());
 
     @Override
     public void dispatch(Event event) {
-        dispatch(event, GlobalEventChannel.INSTANCE);
+        dispatch(event, globalEventChannel);
     }
 
     @Override
@@ -63,6 +64,11 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
     @Override
     public void addInterceptor(Interceptor<Event> dispatchInterceptor) {
         eventDispatchInterceptors.add(dispatchInterceptor);
+    }
+
+    @Override
+    public EventChannel<Event> getEventChannel() {
+        return globalEventChannel;
     }
 
     @Override
