@@ -18,6 +18,23 @@ import static com.erzbir.albaz.dispatch.api.usage.PrintConstants.RESET;
  * @since 1.0.0
  */
 public class IMChatDemo {
+    public static void main(String[] args) throws IOException, InterruptedException {
+        IMChatDemo IMChatDemo = new IMChatDemo();
+        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance();
+
+        try {
+            IMChatDemo.demoRun(eventDispatcher);
+
+            eventDispatcher.await();
+            Thread.sleep(3000);
+
+//            eventDispatcher.cancel();
+        } catch (Exception e) {
+            System.err.println("Demo execution error: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
     public void demoRun(EventDispatcher eventDispatcher) throws IOException {
         eventDispatcher.start();
 
@@ -66,22 +83,5 @@ public class IMChatDemo {
         // Server sends messages
         IMServer.sendUserMessage(new UserMessage("Albaz", "Hi I am Albaz"));
         IMServer.sendGroupMessage(new GroupMessage("GroupA", "This group is great"));
-    }
-
-    public static void main(String[] args) throws IOException, InterruptedException {
-        IMChatDemo IMChatDemo = new IMChatDemo();
-        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance();
-
-        try {
-            IMChatDemo.demoRun(eventDispatcher);
-
-            eventDispatcher.await();
-            Thread.sleep(3000);
-
-//            eventDispatcher.cancel();
-        } catch (Exception e) {
-            System.err.println("Demo execution error: " + e.getMessage());
-            e.printStackTrace();
-        }
     }
 }

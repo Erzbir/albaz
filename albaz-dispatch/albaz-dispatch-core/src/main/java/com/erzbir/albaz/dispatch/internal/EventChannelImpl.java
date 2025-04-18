@@ -51,8 +51,8 @@ import java.util.function.Predicate;
  * @since 1.0.0
  */
 class EventChannelImpl<E extends Event> extends EventChannel<E> {
-    private final Log log = LogFactory.getLog(getClass());
     protected final ListenerRegistries listenerRegistries = new ListenerRegistries();
+    private final Log log = LogFactory.getLog(getClass());
 
 
     public EventChannelImpl(Class<E> baseEventClass) {

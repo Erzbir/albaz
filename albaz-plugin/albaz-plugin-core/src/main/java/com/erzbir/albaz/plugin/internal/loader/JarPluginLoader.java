@@ -25,8 +25,8 @@ import java.util.jar.JarFile;
  * @since 1.0.0
  */
 public class JarPluginLoader extends AbstractPluginLoader implements PluginLoader {
-    private final Log log = LogFactory.getLog(JarPluginLoader.class);
     protected final static String SERVICE_PATH = "META-INF/services/com.erzbir.albaz.plugin.Plugin";
+    private final Log log = LogFactory.getLog(JarPluginLoader.class);
 
     public JarPluginLoader(ClassLoader parent) {
         super(parent);

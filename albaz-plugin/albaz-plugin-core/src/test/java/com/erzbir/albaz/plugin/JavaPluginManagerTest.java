@@ -16,6 +16,16 @@ class JavaPluginManagerTest {
         return declaredConstructor.newInstance();
     }
 
+    public static void main(String[] args) throws InterruptedException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException, PluginNotFoundException {
+        JavaPluginManager javaPluginManager = newPluginManager();
+        javaPluginManager.loadPlugins();
+        Assertions.assertEquals(1, javaPluginManager.size());
+        Thread.sleep(2000);
+        javaPluginManager.unloadPlugins();
+        Thread.sleep(2000);
+        Assertions.assertEquals(0, javaPluginManager.size());
+    }
+
     @Test
     void serviceLoad() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
@@ -78,16 +88,6 @@ class JavaPluginManagerTest {
 
     @Test
     void unloadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException, PluginNotFoundException {
-        JavaPluginManager javaPluginManager = newPluginManager();
-        javaPluginManager.loadPlugins();
-        Assertions.assertEquals(1, javaPluginManager.size());
-        Thread.sleep(2000);
-        javaPluginManager.unloadPlugins();
-        Thread.sleep(2000);
-        Assertions.assertEquals(0, javaPluginManager.size());
-    }
-
-    public static void main(String[] args) throws InterruptedException, InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException, PluginNotFoundException {
         JavaPluginManager javaPluginManager = newPluginManager();
         javaPluginManager.loadPlugins();
         Assertions.assertEquals(1, javaPluginManager.size());

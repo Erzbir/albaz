@@ -1,7 +1,5 @@
 package com.erzbir.albaz.dispatch.event;
 
-import java.util.concurrent.locks.Lock;
-
 /**
  * @author Erzbir
  * @since 1.0.0

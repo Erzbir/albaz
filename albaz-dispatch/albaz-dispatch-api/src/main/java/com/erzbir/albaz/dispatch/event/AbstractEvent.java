@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class AbstractEvent implements Event {
     protected final AtomicBoolean intercepted;
-    private final AtomicBoolean canceled;
     protected final Object source;
     protected final long timestamp;
+    private final AtomicBoolean canceled;
     protected EventContext eventContext;
 
     public AbstractEvent(Object source) {

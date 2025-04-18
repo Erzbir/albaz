@@ -33,16 +33,6 @@ class MessageProto implements Protocol {
         this.message = messageBytes;
     }
 
-    public byte[] serialize() throws IOException {
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        out.write(code);
-        out.write(s_len);
-        out.write(subject);
-        out.write(msg_len);
-        out.write(message);
-        return out.toByteArray();
-    }
-
     public static MessageProto readFromIO(InputStream input) throws IOException {
         // Read message type
         byte code = input.readNBytes(1)[0];
@@ -64,6 +54,16 @@ class MessageProto implements Protocol {
 
 
         return new MessageProto(code, subject, message);
+    }
+
+    public byte[] serialize() throws IOException {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        out.write(code);
+        out.write(s_len);
+        out.write(subject);
+        out.write(msg_len);
+        out.write(message);
+        return out.toByteArray();
     }
 
     @Override

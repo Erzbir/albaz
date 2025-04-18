@@ -8,6 +8,21 @@ import org.junit.jupiter.api.Test;
  */
 class PollingEventDispatcherTest {
 
+    public static void main(String[] args) {
+        PollingEventDispatcherTest test = new PollingEventDispatcherTest();
+        PollingEventDispatcher dispatcher = new PollingEventDispatcher();
+        dispatcher.start();
+        test.dispatchBatch(dispatcher);
+        dispatcher.join();
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        System.out.println("122");
+        dispatcher.cancel();
+    }
+
     private void dispatchBatch(PollingEventDispatcher dispatcher) {
         int i = 10;
         while (i-- > 0) {
@@ -30,21 +45,6 @@ class PollingEventDispatcherTest {
         dispatchBatch(dispatcher);
         dispatcher.cancel();
         Thread.sleep(100);
-    }
-
-    public static void main(String[] args) {
-        PollingEventDispatcherTest test = new PollingEventDispatcherTest();
-        PollingEventDispatcher dispatcher = new PollingEventDispatcher();
-        dispatcher.start();
-        test.dispatchBatch(dispatcher);
-        dispatcher.join();
-        try {
-            Thread.sleep(1000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        System.out.println("122");
-        dispatcher.cancel();
     }
 
     @Test
