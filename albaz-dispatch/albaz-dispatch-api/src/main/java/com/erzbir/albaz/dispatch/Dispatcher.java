@@ -15,14 +15,14 @@ public interface Dispatcher {
     boolean isActive();
 
     /**
-     * 阻塞当前调用进程
+     * 阻塞当前调用线程
      */
     void join();
 
     void join(long timeout);
 
     /**
-     * 进入等待, 等待任务全部结束, 不会阻塞调用线程
+     * 等待任务全部结束, 不会阻塞调用线程
      */
     void await();
 }
