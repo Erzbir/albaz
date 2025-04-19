@@ -13,7 +13,7 @@ class EventChannelImplTest {
     void close() {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         eventChannel.close();
-        Assertions.assertTrue(eventChannel.isCanceled());
+        Assertions.assertTrue(eventChannel.isClosed());
     }
 
     @Test
@@ -21,22 +21,14 @@ class EventChannelImplTest {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         eventChannel.close();
         eventChannel.open();
-        Assertions.assertFalse(eventChannel.isCanceled());
-
+        Assertions.assertFalse(eventChannel.isClosed());
     }
 
     @Test
-    void cancel() {
-        EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.cancel();
-        Assertions.assertTrue(eventChannel.isCanceled());
-    }
-
-    @Test
-    void isCanceled() {
+    void isClosed() {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         eventChannel.close();
-        Assertions.assertTrue(eventChannel.isCanceled());
+        Assertions.assertTrue(eventChannel.isClosed());
     }
 
     @Test

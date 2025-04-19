@@ -44,7 +44,7 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
             log.debug("Intercept event: " + event);
             return;
         }
-        if (channel.isCanceled()) {
+        if (channel.isClosed()) {
             log.warn("EventChannel: " + channel.getClass().getSimpleName() + " is already shutdown, dispatching canceled");
             return;
         }
@@ -82,12 +82,7 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
     }
 
     @Override
-    public boolean isCanceled() {
-        return !activated.get();
-    }
-
-    @Override
-    public void cancel() {
+    public void close() {
         activated.set(false);
     }
 }

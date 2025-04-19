@@ -30,15 +30,13 @@ import java.util.concurrent.locks.LockSupport;
 public final class PollingEventDispatcher extends AbstractEventDispatcher implements EventDispatcher {
     private final Log log = LogFactory.getLog(PollingEventDispatcher.class);
     private final int batchSize = 5;
-    // 同步块的锁, 用于控制线程
-    private final Object dispatchLock = new Object();
     // 事件缓存队列
     private final PriorityBlockingQueue<Event> eventQueue = new PriorityBlockingQueue<>(10, new EventComparator());
     // 暂停线程标志位
     private final AtomicBoolean suspended = new AtomicBoolean(false);
     private volatile Thread dispatcherThread;
     /**
-     * 守卫线程, 用于调用 {@link #await()} 后分发线程被挂起, 保证主线程不退出, 在调用 {@link #cancel()} 后退出
+     * 守卫线程, 用于调用 {@link #await()} 后分发线程被挂起, 保证主线程不退出, 在调用 {@link #close()} 后退出
      */
     private volatile Thread guardThread;
 
@@ -65,11 +63,10 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
                 }
                 List<Event> events = new ArrayList<>(batchSize);
                 eventQueue.drainTo(events, batchSize);
-                EventChannelDispatcher<Event> channel = EventChannelDispatcher.INSTANCE;
                 for (Event event : events) {
                     Thread.ofVirtual()
                             .name("Dispatch-Thread-" + Thread.currentThread().threadId())
-                            .start(createDispatchTask(channel, event));
+                            .start(createDispatchTask(getEventChannel(), event));
                 }
             }
         };
@@ -123,7 +120,7 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     }
 
     @Override
-    public void cancel() {
+    public void close() {
         if (!isActive()) {
             log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already closed");
             return;

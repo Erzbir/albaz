@@ -14,7 +14,7 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @since 1.0.0
  */
-final class FilterEventChannel<E extends Event> extends EventChannel<E> {
+final class FilterEventChannel<E extends Event> extends AbstractEventChannel<E> {
     private final EventChannel<E> delegate;
     private final Predicate<Event> filter;
 
@@ -57,11 +57,6 @@ final class FilterEventChannel<E extends Event> extends EventChannel<E> {
     @Override
     public <T extends E> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handler) {
         return delegate.subscribeAlways(eventType, intercept(handler));
-    }
-
-    @Override
-    public Listener<E> createListener(Function<E, ListenerStatus> handler) {
-        return delegate.createListener(intercept(handler));
     }
 
     private <T extends E> Listener<T> intercept(Listener<T> listener) {

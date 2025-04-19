@@ -42,7 +42,7 @@ import java.util.function.Predicate;
  * </p>
  *
  * @author Erzbir
- * @see EventChannel
+ * @see AbstractEventChannel
  * @see Event
  * @see Listener
  * @see ListenerStatus
@@ -50,7 +50,7 @@ import java.util.function.Predicate;
  * @see SafeListener
  * @since 1.0.0
  */
-class EventChannelImpl<E extends Event> extends EventChannel<E> {
+class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
     protected final ListenerRegistries listenerRegistries = new ListenerRegistries();
     private final Log log = LogFactory.getLog(getClass());
 
@@ -115,8 +115,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         });
     }
 
-    @Override
-    public Listener<E> createListener(Function<E, ListenerStatus> handle) {
+    Listener<E> createListener(Function<E, ListenerStatus> handle) {
         return createSafeListener(handle::apply);
     }
 
@@ -235,7 +234,6 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             listenerRef = null;
         }
 
-        @Override
         public boolean isDisposed() {
             return disposed.get();
         }

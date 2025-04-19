@@ -28,7 +28,7 @@ public class IMChatDemo {
             eventDispatcher.await();
             Thread.sleep(3000);
 
-            eventDispatcher.cancel();
+            eventDispatcher.close();
         } catch (Exception e) {
             System.err.println("Demo execution error: " + e.getMessage());
             e.printStackTrace();

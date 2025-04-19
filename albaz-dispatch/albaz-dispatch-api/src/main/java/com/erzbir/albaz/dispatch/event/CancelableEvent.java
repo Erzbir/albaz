@@ -1,6 +1,6 @@
 package com.erzbir.albaz.dispatch.event;
 
-import com.erzbir.albaz.dispatch.common.Cancelable;
+import com.erzbir.albaz.common.Cancelable;
 
 /**
  * @author Erzbir

@@ -81,7 +81,7 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
     }
 
     @Override
-    public void cancel() {
+    public void close() {
         if (!isActive()) {
             log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already closed");
             return;

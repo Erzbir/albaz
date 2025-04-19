@@ -28,7 +28,7 @@ class NotificationEventDispatcherTest {
         });
         thread.start();
         Thread.sleep(1000);
-        dispatcher.cancel();
+        dispatcher.close();
         int i = 10;
         while (i-- > 0) {
             dispatcher.dispatch(new TestEvent(this));

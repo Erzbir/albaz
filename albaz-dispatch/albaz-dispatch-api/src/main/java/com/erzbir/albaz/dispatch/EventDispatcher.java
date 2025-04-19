@@ -1,9 +1,9 @@
 package com.erzbir.albaz.dispatch;
 
 
+import com.erzbir.albaz.common.Closeable;
 import com.erzbir.albaz.common.Interceptor;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
-import com.erzbir.albaz.dispatch.common.Cancelable;
 import com.erzbir.albaz.dispatch.event.Event;
 
 /**
@@ -15,7 +15,7 @@ import com.erzbir.albaz.dispatch.event.Event;
  * @see Dispatcher
  * @since 1.0.0
  */
-public interface EventDispatcher extends Dispatcher, Cancelable {
+public interface EventDispatcher extends Dispatcher, Closeable {
     void dispatch(Event event);
 
     <E extends Event> void dispatch(E event, EventChannel<E> channel);
