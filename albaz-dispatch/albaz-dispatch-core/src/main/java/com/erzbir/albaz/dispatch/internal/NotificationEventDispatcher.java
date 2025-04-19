@@ -59,7 +59,6 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
     @Override
     public void join() {
         join(0L);
-
     }
 
     @Override
@@ -83,6 +82,10 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
 
     @Override
     public void cancel() {
+        if (!isActive()) {
+            log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already closed");
+            return;
+        }
         activated.set(false);
 
         synchronized (lock) {
@@ -90,6 +93,7 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
         }
         if (guardThread != null) {
             guardThread.interrupt();
+            guardThread = null;
         }
     }
 }

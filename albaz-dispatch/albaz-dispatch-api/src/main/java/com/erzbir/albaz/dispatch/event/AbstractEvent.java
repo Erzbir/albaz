@@ -66,6 +66,11 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
+    public Object getSource() {
+        return source;
+    }
+
+    @Override
     public String toString() {
         return this.getClass().getSimpleName() + "{" +
                 "timestamp=" + timestamp +
