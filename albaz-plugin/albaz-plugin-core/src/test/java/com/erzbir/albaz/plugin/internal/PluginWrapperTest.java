@@ -2,12 +2,13 @@ package com.erzbir.albaz.plugin.internal;
 
 import com.erzbir.albaz.plugin.JavaPlugin;
 import com.erzbir.albaz.plugin.Plugin;
+import com.erzbir.albaz.plugin.PluginContext;
 import com.erzbir.albaz.plugin.PluginDescription;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class PluginWrapperTest {
-    class JunitTestPlugin extends JavaPlugin implements Plugin {
+    static class JunitTestPlugin extends JavaPlugin implements Plugin {
         public JunitTestPlugin(PluginDescription description) {
             super(description);
         }
@@ -81,13 +82,21 @@ class PluginWrapperTest {
 
     @Test
     void getDescription() {
+        PluginWrapper wrapper = new PluginWrapper(new JunitTestPlugin(new PluginDescription("test", "1.0.0")));
+        Assertions.assertEquals("test", wrapper.getDescription().getId());
     }
 
     @Test
     void getPluginContext() {
+        PluginWrapper wrapper = new PluginWrapper(new JunitTestPlugin(new PluginDescription("test", "1.0.0")));
+        Assertions.assertTrue(wrapper.getPluginContext().isEmpty());
     }
 
     @Test
     void setPluginContext() {
+        PluginWrapper wrapper = new PluginWrapper(new JunitTestPlugin(new PluginDescription("test", "1.0.0")));
+        PluginContext pluginContext = new PluginContext();
+        wrapper.setPluginContext(pluginContext);
+        Assertions.assertEquals(pluginContext, wrapper.getPluginContext());
     }
 }

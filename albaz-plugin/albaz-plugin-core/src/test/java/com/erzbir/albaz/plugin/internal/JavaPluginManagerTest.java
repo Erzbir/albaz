@@ -1,81 +1,64 @@
 package com.erzbir.albaz.plugin.internal;
 
+import com.erzbir.albaz.plugin.Plugin;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 
 class JavaPluginManagerTest {
-    static JavaPluginManager newPluginManager() throws InvocationTargetException, InstantiationException, IllegalAccessException, NoSuchMethodException {
-        Constructor<JavaPluginManager> declaredConstructor = JavaPluginManager.class.getDeclaredConstructor();
-        declaredConstructor.setAccessible(true);
-        return declaredConstructor.newInstance();
-    }
 
     @Test
-    void serviceLoad() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException {
-        JavaPluginManager javaPluginManager = newPluginManager();
-        javaPluginManager.loadPlugins();
-        javaPluginManager.enablePlugins();
-        javaPluginManager.unloadPlugins();
-        Thread.sleep(100);
-        Assertions.assertEquals(0, javaPluginManager.size());
-    }
-
-    @Test
-    void loadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        JavaPluginManager javaPluginManager = newPluginManager();
+    void loadPlugins() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugins();
         Assertions.assertTrue(javaPluginManager.size() > 0);
     }
 
     @Test
-    void loadPlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        JavaPluginManager javaPluginManager = newPluginManager();
+    void loadPlugin() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugin(new File("plugins/plugin-test-1.0.0-all.jar"));
         Assertions.assertTrue(javaPluginManager.size() > 0);
     }
 
     @Test
-    void enablePlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        JavaPluginManager javaPluginManager = newPluginManager();
-
+    void enablePlugin() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugins();
         javaPluginManager.enablePlugin("test");
-        Assertions.assertTrue(javaPluginManager.size() > 0);
+        Assertions.assertTrue(javaPluginManager.getPlugin("test").isEnable());
     }
 
     @Test
-    void enablePlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        JavaPluginManager javaPluginManager = newPluginManager();
-
+    void enablePlugins() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugins();
         javaPluginManager.enablePlugins();
-        Assertions.assertTrue(javaPluginManager.size() > 0);
+        Assertions.assertTrue(javaPluginManager.getPlugins().stream().map(Plugin::isEnable).reduce(true, (a1, a2) -> a1 && a2));
     }
 
     @Test
-    void disablePlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        JavaPluginManager javaPluginManager = newPluginManager();
+    void disablePlugin() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugins();
         javaPluginManager.disablePlugin("test");
-        Assertions.assertTrue(javaPluginManager.size() > 0);
+        Assertions.assertFalse(javaPluginManager.getPlugin("test").isEnable());
     }
 
     @Test
-    void disablePlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-        JavaPluginManager javaPluginManager = newPluginManager();
+    void disablePlugins() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugins();
         javaPluginManager.enablePlugins();
         javaPluginManager.disablePlugins();
-        Assertions.assertTrue(javaPluginManager.size() > 0);
+        Assertions.assertFalse(javaPluginManager.getPlugins().stream().map(Plugin::isEnable).reduce(true, (a1, a2) -> a1 && a2));
+
     }
 
     @Test
-    void unloadPlugins() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException {
-        JavaPluginManager javaPluginManager = newPluginManager();
+    void unloadPlugins() throws InterruptedException {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugins();
         Assertions.assertTrue(javaPluginManager.size() > 0);
         Thread.sleep(2000);
@@ -85,12 +68,65 @@ class JavaPluginManagerTest {
     }
 
     @Test
-    void unloadPlugin() throws InstantiationException, IllegalAccessException, NoSuchMethodException, InvocationTargetException, InterruptedException {
-        JavaPluginManager javaPluginManager = newPluginManager();
+    void unloadPlugin() throws InterruptedException {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
         javaPluginManager.loadPlugins();
         Assertions.assertTrue(javaPluginManager.size() > 0);
         javaPluginManager.unloadPlugin("test");
         Thread.sleep(100);
-        Assertions.assertEquals(1, javaPluginManager.size());
+        Assertions.assertThrows(NullPointerException.class, () -> javaPluginManager.getPlugin("test"));
+    }
+
+    @Test
+    void reloadPlugins() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
+        javaPluginManager.loadPlugins();
+        javaPluginManager.reloadPlugins();
+        Assertions.assertFalse(javaPluginManager.getPlugins().stream().map(Plugin::isEnable).reduce(true, (a1, a2) -> a1 && a2));
+
+    }
+
+    @Test
+    void reloadPlugin() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
+        javaPluginManager.loadPlugins();
+        javaPluginManager.reloadPlugin("test");
+        Assertions.assertNotNull(javaPluginManager.getPlugin("test"));
+    }
+
+    @Test
+    void size() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
+        Assertions.assertEquals(0, javaPluginManager.size());
+        javaPluginManager.loadPlugins();
+        Assertions.assertTrue(javaPluginManager.size() > 0);
+    }
+
+    @Test
+    void getPlugin() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
+        javaPluginManager.loadPlugins();
+        Assertions.assertNotNull(javaPluginManager.getPlugin("test"));
+    }
+
+    @Test
+    void getPlugins() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
+        javaPluginManager.loadPlugins();
+        Assertions.assertFalse(javaPluginManager.getPlugins().isEmpty());
+    }
+
+    @Test
+    void getPluginHandle() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
+        javaPluginManager.loadPlugins();
+        Assertions.assertNotNull(javaPluginManager.getPluginHandle("test"));
+    }
+
+    @Test
+    void getPluginHandles() {
+        JavaPluginManager javaPluginManager = new JavaPluginManager();
+        javaPluginManager.loadPlugins();
+        Assertions.assertFalse(javaPluginManager.getPlugins().isEmpty());
     }
 }

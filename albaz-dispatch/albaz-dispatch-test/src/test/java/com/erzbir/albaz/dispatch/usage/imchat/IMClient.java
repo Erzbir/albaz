@@ -29,7 +29,7 @@ public class IMClient implements Closeable {
                 while (running && !Thread.currentThread().isInterrupted()) {
                     if (input.available() <= 0) {
                         // Avoid busy waiting
-                        TimeUnit.MILLISECONDS.sleep(20);
+                        TimeUnit.MILLISECONDS.sleep(200);
                         continue;
                     }
 
