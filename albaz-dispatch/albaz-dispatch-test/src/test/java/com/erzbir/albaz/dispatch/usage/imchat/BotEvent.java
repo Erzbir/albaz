@@ -1,10 +1,10 @@
-package com.erzbir.albaz.dispatch.api.usage.imchat;
+package com.erzbir.albaz.dispatch.usage.imchat;
 
 import com.erzbir.albaz.dispatch.event.AbstractEvent;
 import com.erzbir.albaz.dispatch.event.Event;
 
-import static com.erzbir.albaz.dispatch.api.usage.PrintConstants.GREEN;
-import static com.erzbir.albaz.dispatch.api.usage.PrintConstants.RESET;
+import static com.erzbir.albaz.dispatch.usage.PrintConstants.GREEN;
+import static com.erzbir.albaz.dispatch.usage.PrintConstants.RESET;
 
 /**
  * @author Erzbir

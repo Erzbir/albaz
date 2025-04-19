@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch.api.usage.imchat;
+package com.erzbir.albaz.dispatch.usage.imchat;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
@@ -10,8 +10,8 @@ import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
 import java.io.IOException;
 import java.io.PipedOutputStream;
 
-import static com.erzbir.albaz.dispatch.api.usage.PrintConstants.BLUE;
-import static com.erzbir.albaz.dispatch.api.usage.PrintConstants.RESET;
+import static com.erzbir.albaz.dispatch.usage.PrintConstants.BLUE;
+import static com.erzbir.albaz.dispatch.usage.PrintConstants.RESET;
 
 /**
  * @author Erzbir
@@ -20,7 +20,7 @@ import static com.erzbir.albaz.dispatch.api.usage.PrintConstants.RESET;
 public class IMChatDemo {
     public static void main(String[] args) throws IOException, InterruptedException {
         IMChatDemo IMChatDemo = new IMChatDemo();
-        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance();
+        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance("com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher");
 
         try {
             IMChatDemo.demoRun(eventDispatcher);
@@ -28,7 +28,7 @@ public class IMChatDemo {
             eventDispatcher.await();
             Thread.sleep(3000);
 
-//            eventDispatcher.cancel();
+            eventDispatcher.cancel();
         } catch (Exception e) {
             System.err.println("Demo execution error: " + e.getMessage());
             e.printStackTrace();

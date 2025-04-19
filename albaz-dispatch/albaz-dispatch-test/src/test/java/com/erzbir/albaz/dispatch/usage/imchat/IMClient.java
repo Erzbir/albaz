@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch.api.usage.imchat;
+package com.erzbir.albaz.dispatch.usage.imchat;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
 

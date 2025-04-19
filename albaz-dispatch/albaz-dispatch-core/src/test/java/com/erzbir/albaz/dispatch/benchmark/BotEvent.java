@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch.api.benchmark;
+package com.erzbir.albaz.dispatch.benchmark;
 
 import com.erzbir.albaz.dispatch.event.Event;
 

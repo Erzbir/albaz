@@ -1,8 +1,9 @@
-package com.erzbir.albaz.dispatch.api.benchmark;
+package com.erzbir.albaz.dispatch.benchmark;
 
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
+import com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
@@ -15,8 +16,9 @@ class DefaultDispatcherTest {
 
     public static void main(String[] args) throws InterruptedException {
         DefaultDispatcherTest defaultDispatcherTest = new DefaultDispatcherTest();
-        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance();
-        defaultDispatcherTest.dispatchJoin(eventDispatcher);
+        EventDispatcher eventDispatcher = new NotificationEventDispatcher();
+        defaultDispatcherTest.dispatchAwait(eventDispatcher);
+        Thread.sleep(1000);
         System.out.println(eventDispatcher);
     }
 

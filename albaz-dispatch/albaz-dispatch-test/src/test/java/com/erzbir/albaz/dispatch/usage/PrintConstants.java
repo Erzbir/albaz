@@ -1,4 +1,4 @@
-package com.erzbir.albaz.dispatch.api.usage;
+package com.erzbir.albaz.dispatch.usage;
 
 /**
  * @author Erzbir
