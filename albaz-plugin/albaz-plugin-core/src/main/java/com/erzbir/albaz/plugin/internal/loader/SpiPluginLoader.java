@@ -3,9 +3,11 @@ package com.erzbir.albaz.plugin.internal.loader;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.PluginLoader;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
+import com.erzbir.albaz.plugin.exception.PluginLoadException;
 import com.erzbir.albaz.plugin.internal.FileTypeDetector;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ServiceLoader;
 
 /**
@@ -24,16 +26,23 @@ public class SpiPluginLoader extends AbstractPluginLoader implements PluginLoade
     }
 
     @Override
-    protected Plugin resolve(File file) throws PluginIllegalException {
+    protected Plugin resolve(File file) {
+        FileTypeDetector.FileType detect;
         try {
-            FileTypeDetector.FileType detect = FileTypeDetector.detect(file);
-            if (!file.getName().endsWith(".jar") || !detect.equals(FileTypeDetector.FileType.JAR)) {
-                throw new PluginIllegalException("The file " + file.getAbsolutePath() + " is not a jar file");
-            }
-            classLoader.addFile(file);
-        } catch (Throwable e) {
+            detect = FileTypeDetector.detect(file);
+        } catch (IOException e) {
             throw new PluginIllegalException(e);
         }
-        return ServiceLoader.load(Plugin.class, classLoader).iterator().next();
+        if (!file.getName().endsWith(".jar") || !detect.equals(FileTypeDetector.FileType.JAR)) {
+            throw new PluginIllegalException("The file " + file.getAbsolutePath() + " is not a jar file");
+        }
+        classLoader.addFile(file);
+        Plugin plugin;
+        try {
+            plugin = ServiceLoader.load(Plugin.class, classLoader).iterator().next();
+        } catch (Throwable e) {
+            throw new PluginLoadException(e);
+        }
+        return plugin;
     }
 }

@@ -10,7 +10,6 @@ import com.erzbir.albaz.plugin.PluginDescription;
  */
 public class PluginWrapper implements Plugin {
     private final Plugin delegate;
-    private final Object lock = new Object();
 
     public PluginWrapper(Plugin plugin) {
         this.delegate = plugin;
@@ -18,38 +17,22 @@ public class PluginWrapper implements Plugin {
 
     @Override
     public void onEnable() {
-        Thread.ofVirtual().start(() -> {
-            synchronized (lock) {
-                delegate.onEnable();
-            }
-        });
+        delegate.onEnable();
     }
 
     @Override
     public void onDisable() {
-        Thread.ofVirtual().start(() -> {
-            synchronized (lock) {
-                delegate.onDisable();
-            }
-        });
+        delegate.onDisable();
     }
 
     @Override
     public void onLoad() {
-        Thread.ofVirtual().start(() -> {
-            synchronized (lock) {
-                delegate.onLoad();
-            }
-        });
+        delegate.onLoad();
     }
 
     @Override
     public void onUnLoad() {
-        Thread.ofVirtual().start(() -> {
-            synchronized (lock) {
-                delegate.onUnLoad();
-            }
-        });
+        delegate.onUnLoad();
     }
 
     @Override

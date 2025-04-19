@@ -1,6 +1,5 @@
 package com.erzbir.albaz.plugin;
 
-import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 import com.erzbir.albaz.plugin.spi.PluginManagerProvider;
 
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.List;
  * @since 1.0.0
  */
 public class UnloadClassTest {
-    public static void main(String[] args) throws PluginNotFoundException {
+    public static void main(String[] args) {
         PluginManager pluginManager = PluginManagerProvider.INSTANCE.getInstance();
         pluginManager.loadPlugins();
         List<PluginHandle> pluginHandles = pluginManager.getPluginHandles();

@@ -3,13 +3,14 @@ package com.erzbir.albaz.plugin.internal;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.*;
-import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
-import com.erzbir.albaz.plugin.exception.PluginNotSupportException;
+import com.erzbir.albaz.plugin.exception.PluginIllegalException;
+import com.erzbir.albaz.plugin.exception.PluginLoadException;
 import com.erzbir.albaz.plugin.internal.loader.ClassPluginLoader;
 import com.erzbir.albaz.plugin.internal.loader.FatJarPluginLoader;
 import com.erzbir.albaz.plugin.internal.loader.SpiPluginLoader;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,14 +35,9 @@ public class JavaPluginManager implements PluginManager {
     private final static String PLUGIN_DIR = "plugins";
     private final Log log = LogFactory.getLog(JavaPluginManager.class);
     private final Map<String, PluginHandle> plugins = new ConcurrentHashMap<>();
-    private boolean isServiceLoad = true;
 
     public JavaPluginManager() {
 
-    }
-
-    public void useServiceLoader(boolean isServiceLoad) {
-        this.isServiceLoad = isServiceLoad;
     }
 
     @Override
@@ -64,51 +60,52 @@ public class JavaPluginManager implements PluginManager {
 
     @Override
     public void loadPlugin(File file) {
+        PluginLoader pluginLoader;
+        FileTypeDetector.FileType fileType;
         try {
-            PluginLoader pluginLoader;
-            FileTypeDetector.FileType fileType = FileTypeDetector.detect(file);
-            switch (fileType) {
-                case FileTypeDetector.FileType.JAR -> {
-                    if (isServiceLoad) {
-                        pluginLoader = new SpiPluginLoader(getClass().getClassLoader());
-                    } else {
-                        pluginLoader = new FatJarPluginLoader(getClass().getClassLoader());
-                    }
-                }
-                case FileTypeDetector.FileType.CLASS ->
-                        pluginLoader = new ClassPluginLoader(getClass().getClassLoader());
-                default -> throw new PluginNotSupportException(file.getName() + " is not a valid plugin file");
-            }
-            Plugin plugin = pluginLoader.load(file);
-            if (plugin == null) {
-                return;
-            }
-            PluginDescription description = plugin.getDescription();
-            if (plugins.containsKey(description.getId())) {
-                log.warn("Plugin " + plugin.getDescription().getId() + " already loaded");
-                unloadPlugin(description.getId());
-                loadPlugin(file);
-                return;
-            }
-            PluginHandle pluginHandle = new PluginHandle(new PluginWrapper(plugin), file.toPath(), pluginLoader, this);
-            plugins.put(description.getId(), pluginHandle);
-            plugin.onLoad();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+            fileType = FileTypeDetector.detect(file);
+        } catch (IOException e) {
+            throw new PluginIllegalException(e);
         }
+        switch (fileType) {
+            case FileTypeDetector.FileType.JAR -> pluginLoader = new SpiPluginLoader(getClass().getClassLoader());
+            case FileTypeDetector.FileType.CLASS -> pluginLoader = new ClassPluginLoader(getClass().getClassLoader());
+            default -> throw new PluginIllegalException(file.getName() + " is not a valid plugin file");
+        }
+        Plugin plugin;
+        try {
+            plugin = pluginLoader.load(file);
+        } catch (Throwable e) {
+            pluginLoader = new FatJarPluginLoader(getClass().getClassLoader());
+            plugin = pluginLoader.load(file);
+        }
+        if (plugin == null) {
+            throw new PluginLoadException("Failed to load plugin " + file.getAbsolutePath());
+        }
+        PluginDescription description = plugin.getDescription();
+        if (plugins.containsKey(description.getId())) {
+            log.warn("Plugin " + plugin.getDescription().getId() + " already loaded, try to reload");
+            unloadPlugin(description.getId());
+            loadPlugin(file);
+            return;
+        }
+        PluginHandle pluginHandle = new PluginHandle(new PluginWrapper(plugin), file.toPath(), pluginLoader, this);
+        plugins.put(description.getId(), pluginHandle);
+        plugin.onLoad();
     }
 
     @Override
-    public void reloadPlugins() throws PluginNotFoundException {
+    public void reloadPlugins() {
         unloadPlugins();
         loadPlugins();
     }
 
     @Override
-    public void reloadPlugin(String pluginId) throws PluginNotFoundException {
+    public void reloadPlugin(String pluginId) {
         PluginHandle pluginHandle = plugins.get(pluginId);
         if (pluginHandle == null) {
-            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+            log.warn("Plugin " + pluginId + " not found");
+            return;
         }
         File pluginFile = pluginHandle.getFile().toFile();
         unloadPlugin(pluginId);
@@ -116,56 +113,62 @@ public class JavaPluginManager implements PluginManager {
     }
 
     @Override
-    public void enablePlugin(String pluginId) throws PluginNotFoundException {
+    public void enablePlugin(String pluginId) {
         PluginHandle pluginHandle = plugins.get(pluginId);
         if (pluginHandle == null) {
-            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+            log.warn("Plugin " + pluginId + " not found");
+            return;
+        }
+        if (pluginHandle.getPlugin().isEnable()) {
+            log.warn("Plugin " + pluginId + " is already enabled");
+            return;
         }
         pluginHandle.getPlugin().enable();
     }
 
     @Override
-    public void enablePlugins() throws PluginNotFoundException {
+    public void enablePlugins() {
         for (String pluginId : plugins.keySet()) {
             enablePlugin(pluginId);
         }
     }
 
     @Override
-    public void disablePlugin(String pluginId) throws PluginNotFoundException {
+    public void disablePlugin(String pluginId) {
         PluginHandle pluginHandle = plugins.get(pluginId);
         if (pluginHandle == null) {
-            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+            log.warn("Plugin " + pluginId + " not found");
+            return;
+        }
+        if (!pluginHandle.getPlugin().isEnable()) {
+            log.warn("Plugin " + pluginId + " is already disabled");
+            return;
         }
         pluginHandle.getPlugin().disable();
     }
 
     @Override
-    public void disablePlugins() throws PluginNotFoundException {
+    public void disablePlugins() {
         for (String pluginId : plugins.keySet()) {
             disablePlugin(pluginId);
         }
     }
 
     @Override
-    public void unloadPlugins() throws PluginNotFoundException {
+    public void unloadPlugins() {
         for (String pluginId : plugins.keySet()) {
             unloadPlugin(pluginId);
         }
     }
 
     @Override
-    public void unloadPlugin(String pluginId) throws PluginNotFoundException {
+    public void unloadPlugin(String pluginId) {
         PluginHandle pluginHandle = plugins.get(pluginId);
         if (pluginHandle == null) {
-            throw new PluginNotFoundException("Plugin " + pluginId + " not found");
+            log.warn("Plugin " + pluginId + " not found");
+            return;
         }
         pluginHandle.getPlugin().onUnLoad();
-        try {
-            Thread.sleep(100);
-        } catch (InterruptedException e) {
-            log.error(String.format("Plugin: %s unload failed when sleep", pluginId), e);
-        }
         pluginHandle.destroy();
         plugins.remove(pluginId);
     }

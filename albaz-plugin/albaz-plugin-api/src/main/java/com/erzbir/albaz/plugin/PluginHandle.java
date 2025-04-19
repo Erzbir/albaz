@@ -2,7 +2,6 @@ package com.erzbir.albaz.plugin;
 
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
-import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -46,7 +45,7 @@ public class PluginHandle {
         return pluginManager;
     }
 
-    public void unload() throws PluginNotFoundException {
+    public void unload() {
         pluginManager.unloadPlugin(plugin.getDescription().getId());
     }
 

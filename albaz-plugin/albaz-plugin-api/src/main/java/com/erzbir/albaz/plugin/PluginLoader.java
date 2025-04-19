@@ -12,7 +12,7 @@ import java.io.File;
  * @since 1.0.0
  */
 public interface PluginLoader {
-    Plugin load(File file) throws PluginIllegalException;
+    Plugin load(File file);
 
     ClassLoader getClassLoader();
 }

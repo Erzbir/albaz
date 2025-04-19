@@ -5,7 +5,7 @@ import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.PluginLoader;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
-import com.erzbir.albaz.plugin.exception.PluginNotSupportException;
+import com.erzbir.albaz.plugin.exception.PluginLoadException;
 import com.erzbir.albaz.plugin.internal.FileTypeDetector;
 
 import java.io.BufferedReader;
@@ -35,12 +35,12 @@ public class FatJarPluginLoader extends AbstractPluginLoader implements PluginLo
     }
 
     @Override
-    protected Plugin resolve(File file) throws PluginIllegalException {
+    protected Plugin resolve(File file) {
         JarFile jarFile;
         try {
             FileTypeDetector.FileType detect = FileTypeDetector.detect(file);
             if (!file.getName().endsWith(".jar") || !detect.equals(FileTypeDetector.FileType.JAR)) {
-                throw new PluginNotSupportException("The file " + file.getAbsolutePath() + " is not a jar file");
+                throw new PluginIllegalException("The file " + file.getAbsolutePath() + " is not a jar file");
             }
             jarFile = new JarFile(file);
             classLoader.addFile(file);
@@ -57,28 +57,39 @@ public class FatJarPluginLoader extends AbstractPluginLoader implements PluginLo
                 try {
                     classLoader.loadClass(className);
                 } catch (Throwable e) {
-                    log.error("Failed to load class " + className, e);
+                    log.error("Failed to load class: " + className, e);
                 }
             }
         });
         return loadPlugin(jarFile);
     }
 
-    private Plugin loadPlugin(JarFile jarFile) throws PluginIllegalException {
-        try (jarFile; BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(jarFile.getInputStream(jarFile.getEntry(SERVICE_PATH))))) {
-            String line;
-            while ((line = bufferedReader.readLine()) != null) {
-                Class<?> clazz = Class.forName(line, true, classLoader);
-                if (Plugin.class.isAssignableFrom(clazz)) {
-                    MethodHandles.Lookup lookup = MethodHandles.lookup();
-                    MethodHandle instanceGetter = lookup.findStaticGetter(clazz, "INSTANCE", clazz);
-                    Object instance = instanceGetter.invoke();
-                    return (Plugin) instance;
-                }
-            }
-        } catch (Throwable e) {
-            throw new PluginIllegalException(e);
+    private Plugin loadPlugin(JarFile jarFile) {
+        String line;
+        try {
+            BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(jarFile.getInputStream(jarFile.getEntry(SERVICE_PATH))));
+            line = bufferedReader.readLine();
+        } catch (IOException e) {
+            throw new PluginLoadException("Failed to read service file", e);
         }
-        throw new PluginIllegalException(String.format("Failed to load plugin: %s. Maybe service file has no contents", jarFile.getName()));
+        Class<?> clazz;
+        try {
+            clazz = Class.forName(line, true, classLoader);
+        } catch (ClassNotFoundException e) {
+            throw new PluginLoadException(String.format("Failed to find class: %s in plugin: %s", line, jarFile.getName()), e);
+        }
+        Object instance = null;
+        if (Plugin.class.isAssignableFrom(clazz)) {
+            MethodHandles.Lookup lookup = MethodHandles.lookup();
+            MethodHandle instanceGetter;
+            try {
+                instanceGetter = lookup.findStaticGetter(clazz, "INSTANCE", clazz);
+                instance = instanceGetter.invoke();
+            } catch (Throwable e) {
+                throw new PluginLoadException(String.format("Failed to find INSTANCE: %s in plugin: %s", line, jarFile.getName()), e);
+            }
+
+        }
+        return (Plugin) instance;
     }
 }
