@@ -12,6 +12,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 /**
  * <p>
@@ -37,75 +38,42 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     private final AtomicBoolean suspended = new AtomicBoolean(false);
     private volatile Thread dispatcherThread;
     /**
-     * 守卫线程, 用于调用 {@link #await()} 后分发线程进入等待, 并且保证主线程不退出, 在调用 {@link #cancel()} 后退出
+     * 守卫线程, 用于调用 {@link #await()} 后分发线程被挂起, 保证主线程不退出, 在调用 {@link #cancel()} 后退出
      */
     private volatile Thread guardThread;
 
     @Override
     protected <E extends Event> void dispatchTo(E event, EventChannel<E> channel) {
         eventQueue.add(event);
-        // 如果有事件要分发, 则恢复线程
-        if (suspended.get()) {
-            resume();
+        if (suspended.compareAndSet(true, false)) {
+            LockSupport.unpark(dispatcherThread);
         }
     }
 
     @Override
     public void start() {
         if (isActive()) {
+            log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already started");
             return;
         }
         Runnable runnable = () -> {
             super.start();
             while (isActive() && !Thread.currentThread().isInterrupted() && dispatcherThread != null) {
-                try {
-                    // 如果队列为空则暂让线程等待
-                    if (eventQueue.isEmpty()) {
-                        if (!suspended.get()) {
-                            suspend();
-                        }
-                        continue;
-                    }
-                    List<Event> events = new ArrayList<>(batchSize);
-                    eventQueue.drainTo(events, batchSize);
-                    EventChannelDispatcher<Event> channel = EventChannelDispatcher.INSTANCE;
-                    for (Event event : events) {
-                        Thread.ofVirtual()
-                                .name("Dispatch-Thread-" + Thread.currentThread().threadId())
-                                .start(createDispatchTask(channel, event));
-                    }
-                } catch (InterruptedException e) {
-                    log.error("Dispatching error: " + e.getMessage());
+                if (eventQueue.isEmpty()) {
+                    suspended.set(true);
+                    LockSupport.park();
+                }
+                List<Event> events = new ArrayList<>(batchSize);
+                eventQueue.drainTo(events, batchSize);
+                EventChannelDispatcher<Event> channel = EventChannelDispatcher.INSTANCE;
+                for (Event event : events) {
+                    Thread.ofVirtual()
+                            .name("Dispatch-Thread-" + Thread.currentThread().threadId())
+                            .start(createDispatchTask(channel, event));
                 }
             }
         };
         dispatcherThread = Thread.ofVirtual().name("Dispatch-Thread-Main").start(runnable);
-    }
-
-    /**
-     * 恢复轮询
-     */
-    private void resume() {
-        if (!isActive()) {
-            return;
-        }
-        synchronized (dispatchLock) {
-            suspended.set(false);
-            dispatchLock.notifyAll();
-        }
-    }
-
-    /**
-     * 暂停轮询
-     */
-    private void suspend() throws InterruptedException {
-        if (!isActive()) {
-            return;
-        }
-        synchronized (dispatchLock) {
-            suspended.set(true);
-            dispatchLock.wait();
-        }
     }
 
     private Runnable createDispatchTask(EventChannel<Event> channel, Event event) {
@@ -150,32 +118,26 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
 
     @Override
     public void await() {
-        guardThread = new Thread(() -> {
-            try {
-                suspend();
-            } catch (InterruptedException e) {
-                log.error("Dispatching error when await thread: " + dispatcherThread);
-            }
-        }, "Dispatch-Thread-Guard");
+        guardThread = new Thread(LockSupport::park, "Dispatch-Thread-Guard");
         guardThread.start();
     }
 
     @Override
     public void cancel() {
         if (!isActive()) {
+            log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already closed");
             return;
         }
         activated.set(false);
         eventQueue.clear();
-        // 这里需要唤醒等待的线程, 否则线程永远都不会结束
-        resume();
-
         if (dispatcherThread != null) {
+            LockSupport.unpark(dispatcherThread);
             dispatcherThread.interrupt();
             dispatcherThread = null;
         }
 
         if (guardThread != null) {
+            LockSupport.unpark(guardThread);
             guardThread.interrupt();
             guardThread = null;
         }
