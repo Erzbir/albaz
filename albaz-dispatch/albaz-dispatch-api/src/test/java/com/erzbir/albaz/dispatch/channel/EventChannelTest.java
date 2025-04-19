@@ -13,58 +13,6 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 class EventChannelTest {
-    class JunitEventChannel extends EventChannel<Event> {
-
-        public JunitEventChannel(Class<Event> baseEventClass) {
-            super(baseEventClass);
-        }
-
-        @Override
-        public void broadcast(Event event) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T extends Event> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T extends Event> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerStatus> handle) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T extends Event> ListenerHandle subscribeOnce(Class<T> eventType, Consumer<T> handle) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T extends Event> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Listener<Event> createListener(Function<Event, ListenerStatus> handle) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public EventChannel<Event> filter(Predicate<? extends Event> predicate) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public <T extends Event> EventChannel<T> filterInstance(Class<T> eventType) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public Iterable<Listener<Event>> getListeners() {
-            throw new UnsupportedOperationException();
-        }
-    }
-
     @Test
     void getBaseEventClass() {
         JunitEventChannel channel = new JunitEventChannel(Event.class);
@@ -117,5 +65,57 @@ class EventChannelTest {
         channel.open();
         Assertions.assertFalse(channel.isCanceled());
         Assertions.assertTrue(channel.activated.get());
+    }
+
+    class JunitEventChannel extends EventChannel<Event> {
+
+        public JunitEventChannel(Class<Event> baseEventClass) {
+            super(baseEventClass);
+        }
+
+        @Override
+        public void broadcast(Event event) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Event> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Event> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerStatus> handle) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Event> ListenerHandle subscribeOnce(Class<T> eventType, Consumer<T> handle) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Event> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Listener<Event> createListener(Function<Event, ListenerStatus> handle) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public EventChannel<Event> filter(Predicate<? extends Event> predicate) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public <T extends Event> EventChannel<T> filterInstance(Class<T> eventType) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public Iterable<Listener<Event>> getListeners() {
+            throw new UnsupportedOperationException();
+        }
     }
 }

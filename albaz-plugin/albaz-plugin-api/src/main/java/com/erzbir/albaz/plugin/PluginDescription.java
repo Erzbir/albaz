@@ -68,6 +68,17 @@ public class PluginDescription {
         this.version = version;
     }
 
+    @Override
+    public String toString() {
+        return "PluginDescription{" +
+                "id='" + id + '\'' +
+                ", name='" + name + '\'' +
+                ", desc='" + desc + '\'' +
+                ", author='" + author + '\'' +
+                ", version='" + version + '\'' +
+                '}';
+    }
+
     public static class Builder {
         private String id;
         private String name;
@@ -112,16 +123,5 @@ public class PluginDescription {
         public PluginDescription build() {
             return new PluginDescription(this);
         }
-    }
-
-    @Override
-    public String toString() {
-        return "PluginDescription{" +
-                "id='" + id + '\'' +
-                ", name='" + name + '\'' +
-                ", desc='" + desc + '\'' +
-                ", author='" + author + '\'' +
-                ", version='" + version + '\'' +
-                '}';
     }
 }

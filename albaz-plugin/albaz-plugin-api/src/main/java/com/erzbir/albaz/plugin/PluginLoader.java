@@ -1,7 +1,5 @@
 package com.erzbir.albaz.plugin;
 
-import com.erzbir.albaz.plugin.exception.PluginIllegalException;
-
 import java.io.File;
 
 /**

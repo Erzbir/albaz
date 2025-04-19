@@ -6,19 +6,11 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class ListenerRegistriesTest {
-    class JunitTestListener implements Listener<TestEvent> {
-        @Override
-        public ListenerStatus onEvent(TestEvent event) {
-            Assertions.assertNotNull(event);
-            return ListenerStatus.STOP;
-        }
-    }
-
     @Test
     void addListener() {
         ListenerRegistries registries = new ListenerRegistries();
         Assertions.assertTrue(registries.isEmpty());
-        registries.addListener(new ListenerRegistry((Class)TestEvent.class, new JunitTestListener()));
+        registries.addListener(new ListenerRegistry((Class) TestEvent.class, new JunitTestListener()));
         Assertions.assertFalse(registries.isEmpty());
     }
 
@@ -26,7 +18,7 @@ class ListenerRegistriesTest {
     void removeListener() {
         ListenerRegistries registries = new ListenerRegistries();
         JunitTestListener listener = new JunitTestListener();
-        registries.addListener(new ListenerRegistry((Class)TestEvent.class, listener));
+        registries.addListener(new ListenerRegistry((Class) TestEvent.class, listener));
         registries.removeListener(listener);
         Assertions.assertTrue(registries.isEmpty());
     }
@@ -35,7 +27,7 @@ class ListenerRegistriesTest {
     void getListenersWithPriority() {
         ListenerRegistries registries = new ListenerRegistries();
         JunitTestListener listener = new JunitTestListener();
-        registries.addListener(new ListenerRegistry((Class)TestEvent.class, listener));
+        registries.addListener(new ListenerRegistry((Class) TestEvent.class, listener));
         Assertions.assertEquals(listener, registries.getListenersWithPriority(Listener.Priority.HIGH).getFirst().listener());
     }
 
@@ -43,7 +35,7 @@ class ListenerRegistriesTest {
     void getListeners() {
         ListenerRegistries registries = new ListenerRegistries();
         JunitTestListener listener = new JunitTestListener();
-        registries.addListener(new ListenerRegistry((Class)TestEvent.class, listener));
+        registries.addListener(new ListenerRegistry((Class) TestEvent.class, listener));
         Assertions.assertFalse(registries.getListeners().isEmpty());
     }
 
@@ -52,7 +44,7 @@ class ListenerRegistriesTest {
         ListenerRegistries registries = new ListenerRegistries();
         Assertions.assertTrue(registries.isEmpty());
         JunitTestListener listener = new JunitTestListener();
-        registries.addListener(new ListenerRegistry((Class)TestEvent.class, listener));
+        registries.addListener(new ListenerRegistry((Class) TestEvent.class, listener));
         registries.callListeners(new TestEvent(this), (listenerRegistry, event) -> {
             Assertions.assertEquals(TestEvent.class, event.getClass());
             Assertions.assertEquals(listener, registries.getListeners().getFirst().listener());
@@ -64,7 +56,7 @@ class ListenerRegistriesTest {
         ListenerRegistries registries = new ListenerRegistries();
         Assertions.assertTrue(registries.isEmpty());
         JunitTestListener listener = new JunitTestListener();
-        registries.addListener(new ListenerRegistry((Class)TestEvent.class, listener));
+        registries.addListener(new ListenerRegistry((Class) TestEvent.class, listener));
         Assertions.assertFalse(registries.isEmpty());
     }
 
@@ -73,7 +65,15 @@ class ListenerRegistriesTest {
         ListenerRegistries registries = new ListenerRegistries();
         Assertions.assertEquals(0, registries.size());
         JunitTestListener listener = new JunitTestListener();
-        registries.addListener(new ListenerRegistry((Class)TestEvent.class, listener));
+        registries.addListener(new ListenerRegistry((Class) TestEvent.class, listener));
         Assertions.assertEquals(1, registries.size());
+    }
+
+    class JunitTestListener implements Listener<TestEvent> {
+        @Override
+        public ListenerStatus onEvent(TestEvent event) {
+            Assertions.assertNotNull(event);
+            return ListenerStatus.STOP;
+        }
     }
 }

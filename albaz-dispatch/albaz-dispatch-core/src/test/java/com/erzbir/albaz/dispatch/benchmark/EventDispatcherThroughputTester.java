@@ -14,12 +14,12 @@ import java.util.concurrent.atomic.LongAdder;
 
 public class EventDispatcherThroughputTester {
 
-    private final LongAdder eventsProcessed = new LongAdder();
-    private final AtomicLong totalExecutionTimeNanos = new AtomicLong(0);
-    private final EventDispatcher eventDispatcher = new NotificationEventDispatcher();
     private static final int TEST_DURATION_SECONDS = 10;
     private static final int THREAD_COUNT = 12;
     private static final int EVENTS_PER_SECOND_LIMIT = 1000;
+    private final LongAdder eventsProcessed = new LongAdder();
+    private final AtomicLong totalExecutionTimeNanos = new AtomicLong(0);
+    private final EventDispatcher eventDispatcher = new NotificationEventDispatcher();
 
     public static void main(String[] args) throws InterruptedException {
         EventDispatcherThroughputTester tester = new EventDispatcherThroughputTester();

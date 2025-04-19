@@ -7,12 +7,6 @@ import java.io.InputStream;
 
 public class FileTypeDetector {
 
-    public enum FileType {
-        CLASS,
-        JAR,
-        UNKNOWN
-    }
-
     public static FileType detect(File file) throws IOException {
         return detect(new FileInputStream(file));
     }
@@ -54,5 +48,11 @@ public class FileTypeDetector {
                 && (header[1] & 0xFF) == 0x4B
                 && (header[2] & 0xFF) == 0x03
                 && (header[3] & 0xFF) == 0x04);
+    }
+
+    public enum FileType {
+        CLASS,
+        JAR,
+        UNKNOWN
     }
 }

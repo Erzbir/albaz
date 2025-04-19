@@ -6,7 +6,6 @@ import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
-import com.erzbir.albaz.dispatch.spi.EventDispatcherProvider;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 

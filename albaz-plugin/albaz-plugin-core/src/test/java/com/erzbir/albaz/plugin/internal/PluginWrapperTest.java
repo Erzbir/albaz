@@ -8,32 +8,6 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 class PluginWrapperTest {
-    static class JunitTestPlugin extends JavaPlugin implements Plugin {
-        public JunitTestPlugin(PluginDescription description) {
-            super(description);
-        }
-
-        @Override
-        public void onEnable() {
-            System.out.println("onEnable");
-        }
-
-        @Override
-        public void onDisable() {
-            System.out.println("onDisable");
-        }
-
-        @Override
-        public void onLoad() {
-            System.out.println("onLoad");
-        }
-
-        @Override
-        public void onUnLoad() {
-            System.out.println("onUnLoad");
-        }
-    }
-
     @Test
     void onEnable() {
         PluginWrapper wrapper = new PluginWrapper(new JunitTestPlugin(new PluginDescription("test", "1.0.0")));
@@ -98,5 +72,31 @@ class PluginWrapperTest {
         PluginContext pluginContext = new PluginContext();
         wrapper.setPluginContext(pluginContext);
         Assertions.assertEquals(pluginContext, wrapper.getPluginContext());
+    }
+
+    static class JunitTestPlugin extends JavaPlugin implements Plugin {
+        public JunitTestPlugin(PluginDescription description) {
+            super(description);
+        }
+
+        @Override
+        public void onEnable() {
+            System.out.println("onEnable");
+        }
+
+        @Override
+        public void onDisable() {
+            System.out.println("onDisable");
+        }
+
+        @Override
+        public void onLoad() {
+            System.out.println("onLoad");
+        }
+
+        @Override
+        public void onUnLoad() {
+            System.out.println("onUnLoad");
+        }
     }
 }
