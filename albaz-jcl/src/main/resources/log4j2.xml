@@ -2,10 +2,10 @@
 <Configuration status="WARN" monitorInterval="60">
     <Properties>
         <Property name="APP_NAME">albaz</Property>
-        <Property name="LOG_DIR">logs</Property>
-        <Property name="FILE_LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{20} - %msg%n</Property>
-        <Property name="CONSOLE_LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{%-5level}{FATAL=red, ERROR=red, WARN=yellow, INFO=green, DEBUG=cyan, TRACE=blue} %style{[%thread]}{yellow} %style{%logger{20}}{cyan} - %msg%n
-        </Property>
+        <Property name="log.dir">logs</Property>
+        <Property name="log.level">all</Property>
+        <Property name="FILE_LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n%throwable</Property>
+        <Property name="CONSOLE_LOG_PATTERN"> %d{yyyy-MM-dd HH:mm:ss.SSS} %style{[%thread]}{magenta} %highlight{%-5level}{FATAL=bright black, ERROR=bright red, WARN=bright yellow, INFO=bright green, DEBUG=bright blue, TRACE=bright cyan} %style{%logger{36}} - %highlight{%msg}{FATAL=black, ERROR=red, WARN=yellow, INFO=green, DEBUG=blue, TRACE=cyan}%n%throwable</Property>
     </Properties>
 
     <Appenders>
@@ -15,8 +15,8 @@
         </Console>
 
         <!-- Rolling File Appender (without colors) -->
-        <RollingFile name="RollingFile" fileName="${LOG_DIR}/logs.log"
-                     filePattern="${LOG_DIR}/logs-%d{yyyy-MM-dd-HH-mm}.log">
+        <RollingFile name="RollingFile" fileName="${sys:log.dir}/logs.log"
+                     filePattern="${sys:log.dir}/logs-%d{yyyy-MM-dd-HH-mm}.log">
             <PatternLayout pattern="${FILE_LOG_PATTERN}"/>
             <Policies>
                 <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
@@ -36,7 +36,7 @@
     </Appenders>
 
     <Loggers>
-        <Root level="all">
+        <Root level="${sys:log.level}">
             <AppenderRef ref="AsyncConsole"/>
             <AppenderRef ref="AsyncRollingFile"/>
         </Root>
