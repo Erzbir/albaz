@@ -1,6 +1,6 @@
 package com.erzbir.albaz.dispatch.usage.imchat;
 
-import com.erzbir.albaz.dispatch.EventDispatcher;
+import com.erzbir.albaz.dispatch.AsyncEventDispatcher;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -11,13 +11,13 @@ import java.util.concurrent.TimeUnit;
 
 public class IMClient implements Closeable {
     private final String bot;
-    private final EventDispatcher eventDispatcher;
+    private final AsyncEventDispatcher eventDispatcher;
     // Simulate network connection
     private final PipedInputStream input;
     private volatile boolean running = true;
     private Thread receiveThread;
 
-    public IMClient(EventDispatcher eventDispatcher, String bot, PipedOutputStream output) throws IOException {
+    public IMClient(AsyncEventDispatcher eventDispatcher, String bot, PipedOutputStream output) throws IOException {
         this.eventDispatcher = eventDispatcher;
         this.bot = bot;
         this.input = new PipedInputStream(output);

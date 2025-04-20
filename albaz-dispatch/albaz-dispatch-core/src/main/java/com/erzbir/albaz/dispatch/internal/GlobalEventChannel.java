@@ -18,18 +18,13 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @since 1.0.0
  */
-public final class GlobalEventChannel extends EventChannel<Event> {
+public final class GlobalEventChannel extends AbstractEventChannel<Event> {
     public static GlobalEventChannel INSTANCE = new GlobalEventChannel(Event.class);
-    private final EventChannel<Event> delegate;
+    private final AbstractEventChannel<Event> delegate;
 
     private GlobalEventChannel(Class<Event> baseEventClass) {
         super(baseEventClass);
         delegate = EventChannelDispatcher.INSTANCE;
-    }
-
-    @Override
-    public void broadcast(Event event) {
-        delegate.broadcast(event);
     }
 
     @Override
@@ -50,11 +45,6 @@ public final class GlobalEventChannel extends EventChannel<Event> {
     @Override
     public <T extends Event> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle) {
         return delegate.subscribeAlways(eventType, handle);
-    }
-
-    @Override
-    public Listener<Event> createListener(Function<Event, ListenerStatus> handle) {
-        return delegate.createListener(handle);
     }
 
     @Override

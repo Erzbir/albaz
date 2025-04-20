@@ -1,6 +1,8 @@
 package com.erzbir.albaz.dispatch.event;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Erzbir
@@ -10,6 +12,7 @@ public abstract class AbstractEvent implements Event {
     protected final AtomicBoolean intercepted;
     protected final Object source;
     protected final long timestamp;
+    protected final Lock broadcastLock = new ReentrantLock();
     private final AtomicBoolean canceled;
     protected EventContext eventContext;
 
@@ -36,18 +39,13 @@ public abstract class AbstractEvent implements Event {
     }
 
     @Override
+    public Lock getBroadcastLock() {
+        return broadcastLock;
+    }
+
+    @Override
     public int getPriority() {
         return Integer.MAX_VALUE;
-    }
-
-    public void cancel() {
-        if (!(this instanceof CancelableEvent)) return;
-        canceled.set(true);
-    }
-
-    public boolean isCanceled() {
-        if (!(this instanceof CancelableEvent)) return false;
-        return canceled.get();
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.erzbir.albaz.dispatch.usage.imchat;
 
-import com.erzbir.albaz.dispatch.EventDispatcher;
+import com.erzbir.albaz.common.Interceptor;
+import com.erzbir.albaz.dispatch.AsyncEventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
@@ -18,24 +19,24 @@ import static com.erzbir.albaz.dispatch.usage.PrintConstants.RESET;
  * @since 1.0.0
  */
 public class IMChatDemo {
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws Exception {
         IMChatDemo IMChatDemo = new IMChatDemo();
-        EventDispatcher eventDispatcher = EventDispatcherProvider.INSTANCE.getInstance("com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher");
-
+        AsyncEventDispatcher eventDispatcher = AsyncEventDispatcher.of(EventDispatcherProvider.INSTANCE.getInstance("com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher"));
+        eventDispatcher = eventDispatcher.async();
         try {
             IMChatDemo.demoRun(eventDispatcher);
 
             eventDispatcher.await();
             Thread.sleep(3000);
 
-            eventDispatcher.cancel();
+            eventDispatcher.close();
         } catch (Exception e) {
             System.err.println("Demo execution error: " + e.getMessage());
             e.printStackTrace();
         }
     }
 
-    public void demoRun(EventDispatcher eventDispatcher) throws IOException {
+    public void demoRun(AsyncEventDispatcher eventDispatcher) throws IOException {
         eventDispatcher.start();
 
         String bot = "Albaz";
@@ -73,9 +74,11 @@ public class IMChatDemo {
                 GroupMessage message = event.getMessage();
                 System.out.println(BLUE + "Received group message: " + message.message + " in group: " + message.group + RESET);
                 // listen only once
-                return ListenerStatus.STOP;
+                return ListenerStatus.CONTINUE;
             }
         });
+
+        eventDispatcher.addInterceptor(new KeywordsInterceptor());
 
         // Client starts receiving
         IMClient.receive();
@@ -83,5 +86,21 @@ public class IMChatDemo {
         // Server sends messages
         IMServer.sendUserMessage(new UserMessage("Albaz", "Hi I am Albaz"));
         IMServer.sendGroupMessage(new GroupMessage("GroupA", "This group is great"));
+        IMServer.sendGroupMessage(new GroupMessage("GroupA", "Hi fxxk you"));
+    }
+
+    static class KeywordsInterceptor implements Interceptor<GroupMessageEvent> {
+        @Override
+        public boolean intercept(GroupMessageEvent target) {
+            if (target instanceof GroupMessageEvent groupMessageEvent) {
+                return !groupMessageEvent.message.message.contains("fxxk");
+            }
+            return true;
+        }
+
+        @Override
+        public Class<GroupMessageEvent> getTargetClass() {
+            return GroupMessageEvent.class;
+        }
     }
 }

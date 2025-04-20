@@ -7,9 +7,6 @@ import com.erzbir.albaz.dispatch.event.Event;
  * <p>
  * 监听器接口, 使用 {@link EventChannel} 来注册监听.
  * </p>
- * <p>
- * 这个接口只规定了需要实现并发模式, 触发类型和优先级不强制
- * </p>
  *
  * @author Erzbir
  * @see Event
@@ -62,5 +59,6 @@ public interface Listener<E extends Event> {
         HIGH,
         NORMAL,
         LOW,
+        MONITOR,
     }
 }

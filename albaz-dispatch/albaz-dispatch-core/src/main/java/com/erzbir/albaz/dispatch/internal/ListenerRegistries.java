@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
  * @author Erzbir
  * @since 1.0.0
  */
-public final class ListenerRegistries {
+final class ListenerRegistries {
     private final EnumMap<Listener.Priority, List<ListenerRegistry>> listeners = new EnumMap<>(Listener.Priority.class);
 
     public ListenerRegistries() {
@@ -53,7 +53,13 @@ public final class ListenerRegistries {
 
     public <E extends Event> void callListeners(E event, BiConsumer<ListenerRegistry, E> consumer) {
         callListeners(event, Listener.Priority.HIGH, consumer);
+        if (event.isIntercepted()) {
+            return;
+        }
         callListeners(event, Listener.Priority.NORMAL, consumer);
+        if (event.isIntercepted()) {
+            return;
+        }
         callListeners(event, Listener.Priority.LOW, consumer);
     }
 

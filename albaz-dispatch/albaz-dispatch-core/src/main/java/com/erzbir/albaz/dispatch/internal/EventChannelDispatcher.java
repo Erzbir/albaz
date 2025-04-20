@@ -15,9 +15,4 @@ public final class EventChannelDispatcher<E extends Event> extends EventChannelI
     private EventChannelDispatcher(Class<E> baseEventClass) {
         super(baseEventClass);
     }
-
-    @Override
-    public void broadcast(Event event) {
-        super.broadcast(event);
-    }
 }

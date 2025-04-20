@@ -20,7 +20,7 @@ class PollingEventDispatcherTest {
             e.printStackTrace();
         }
         System.out.println("122");
-        dispatcher.cancel();
+        dispatcher.close();
     }
 
     private void dispatchBatch(PollingEventDispatcher dispatcher) {
@@ -43,7 +43,7 @@ class PollingEventDispatcherTest {
         PollingEventDispatcher dispatcher = new PollingEventDispatcher();
         dispatcher.start();
         dispatchBatch(dispatcher);
-        dispatcher.cancel();
+        dispatcher.close();
         Thread.sleep(100);
     }
 

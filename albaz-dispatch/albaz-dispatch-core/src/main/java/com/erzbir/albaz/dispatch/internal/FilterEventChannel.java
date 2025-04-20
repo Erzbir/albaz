@@ -5,6 +5,8 @@ import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerHandle;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -14,29 +16,21 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @since 1.0.0
  */
-final class FilterEventChannel<E extends Event> extends EventChannel<E> {
-    private final EventChannel<E> delegate;
+final class FilterEventChannel<E extends Event> extends AbstractEventChannel<E> {
+    private final AbstractEventChannel<E> delegate;
     private final Predicate<Event> filter;
+    private final Log log = LogFactory.getLog(FilterEventChannel.class);
 
-    public FilterEventChannel(EventChannel<E> delegate, Predicate<Event> filter) {
+    FilterEventChannel(AbstractEventChannel<E> delegate, Predicate<Event> filter) {
         super(delegate.getBaseEventClass());
         this.delegate = delegate;
         this.filter = filter;
     }
 
 
-    public FilterEventChannel(EventChannel<E> delegate, Class<E> eventType) {
+    FilterEventChannel(AbstractEventChannel<E> delegate, Class<E> eventType) {
         this(delegate, eventType::isInstance);
         this.baseEventClass = eventType;
-    }
-
-
-    @Override
-    public void broadcast(Event event) {
-        if (!baseEventClass.isInstance(event) && filter.test(event)) {
-            return;
-        }
-        delegate.broadcast(event);
     }
 
     @Override
@@ -57,23 +51,6 @@ final class FilterEventChannel<E extends Event> extends EventChannel<E> {
     @Override
     public <T extends E> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handler) {
         return delegate.subscribeAlways(eventType, intercept(handler));
-    }
-
-    @Override
-    public Listener<E> createListener(Function<E, ListenerStatus> handler) {
-        return delegate.createListener(intercept(handler));
-    }
-
-    private <T extends E> Listener<T> intercept(Listener<T> listener) {
-        return (ev) -> {
-            boolean filterResult;
-            filterResult = getBaseEventClass().isInstance(ev) && filter.test(ev);
-            if (filterResult) {
-                return listener.onEvent(ev);
-            } else {
-                return ListenerStatus.TRUNCATED;
-            }
-        };
     }
 
     /**
@@ -97,24 +74,38 @@ final class FilterEventChannel<E extends Event> extends EventChannel<E> {
         return delegate.getListeners();
     }
 
+    private boolean shouldFilter(E event) {
+        return isClosed() || !getBaseEventClass().isInstance(event) || !filter.test(event);
+    }
+
+    private <T extends E> Listener<T> intercept(Listener<T> listener) {
+        return (ev) -> {
+            if (shouldFilter(ev)) {
+                return listener.onEvent(ev);
+            } else {
+                log.debug("Filtered event " + ev);
+                return ListenerStatus.CONTINUE;
+            }
+        };
+    }
+
     private <T extends E> Consumer<T> intercept(Consumer<T> handler) {
         return (ev) -> {
-            boolean filterResult;
-            filterResult = getBaseEventClass().isInstance(ev) && filter.test(ev);
-            if (filterResult) {
+            if (shouldFilter(ev)) {
                 handler.accept(ev);
+            } else {
+                log.debug("Filtered event " + ev);
             }
         };
     }
 
     private <T extends E> Function<T, ListenerStatus> intercept(Function<T, ListenerStatus> handler) {
         return (ev) -> {
-            boolean filterResult;
-            filterResult = getBaseEventClass().isInstance(ev) && filter.test(ev);
-            if (filterResult) {
+            if (shouldFilter(ev)) {
                 return handler.apply(ev);
             } else {
-                return ListenerStatus.TRUNCATED;
+                log.debug("Filtered event " + ev);
+                return ListenerStatus.CONTINUE;
             }
         };
     }

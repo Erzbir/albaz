@@ -1,5 +1,6 @@
 package com.erzbir.albaz.dispatch.internal;
 
+import com.erzbir.albaz.dispatch.AsyncEventDispatcher;
 import com.erzbir.albaz.dispatch.EventDispatcher;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.CancelableEvent;
@@ -10,6 +11,9 @@ import com.erzbir.albaz.logging.LogFactory;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.LockSupport;
@@ -27,18 +31,17 @@ import java.util.concurrent.locks.LockSupport;
  * @see AbstractEventDispatcher
  * @since 1.0.0
  */
-public final class PollingEventDispatcher extends AbstractEventDispatcher implements EventDispatcher {
+public final class PollingEventDispatcher extends AbstractEventDispatcher implements AsyncEventDispatcher {
     private final Log log = LogFactory.getLog(PollingEventDispatcher.class);
     private final int batchSize = 5;
-    // 同步块的锁, 用于控制线程
-    private final Object dispatchLock = new Object();
     // 事件缓存队列
     private final PriorityBlockingQueue<Event> eventQueue = new PriorityBlockingQueue<>(10, new EventComparator());
     // 暂停线程标志位
     private final AtomicBoolean suspended = new AtomicBoolean(false);
+    private final ExecutorService dispatchThreadPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Dispatch-Thread-", 0).factory());
     private volatile Thread dispatcherThread;
     /**
-     * 守卫线程, 用于调用 {@link #await()} 后分发线程被挂起, 保证主线程不退出, 在调用 {@link #cancel()} 后退出
+     * 守卫线程, 用于调用 {@link #await()} 后分发线程被挂起, 保证主线程不退出, 在调用 {@link #close()} 后退出
      */
     private volatile Thread guardThread;
 
@@ -51,13 +54,24 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     }
 
     @Override
+    public <E extends Event> CompletableFuture<Void> dispatchAsync(E event, EventChannel<E> channel) {
+        return CompletableFuture.runAsync(() -> dispatch(event, channel), dispatchThreadPool);
+    }
+
+    @Override
+    public CompletableFuture<Void> dispatchAsync(Event event) {
+        return dispatchAsync(event, globalEventChannel);
+    }
+
+
+    @Override
     public void start() {
         if (isActive()) {
             log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already started");
             return;
         }
+        activated.set(true);
         Runnable runnable = () -> {
-            super.start();
             while (isActive() && !Thread.currentThread().isInterrupted() && dispatcherThread != null) {
                 if (eventQueue.isEmpty()) {
                     suspended.set(true);
@@ -65,29 +79,25 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
                 }
                 List<Event> events = new ArrayList<>(batchSize);
                 eventQueue.drainTo(events, batchSize);
-                EventChannelDispatcher<Event> channel = EventChannelDispatcher.INSTANCE;
                 for (Event event : events) {
-                    Thread.ofVirtual()
-                            .name("Dispatch-Thread-" + Thread.currentThread().threadId())
-                            .start(createDispatchTask(channel, event));
+                    dispatchThreadPool.submit(createDispatchTask(getEventChannel(), event));
                 }
             }
         };
         dispatcherThread = Thread.ofVirtual().name("Dispatch-Thread-Main").start(runnable);
     }
 
-    private Runnable createDispatchTask(EventChannel<Event> channel, Event event) {
+    private <E extends Event> Runnable createDispatchTask(EventChannel<E> channel, E event) {
         return () -> {
             try {
                 if (event instanceof CancelableEvent cancelableEvent && cancelableEvent.isCanceled()) {
                     return;
                 }
                 if (!event.isIntercepted()) {
-                    log.debug("Dispatching event: " + event + " to channel: " + channel.getClass().getSimpleName());
-                    channel.broadcast(event);
+                    EventChannelDispatcher.INSTANCE.broadcast(event);
                 }
             } catch (Throwable e) {
-                log.error("Dispatching to channel: " + channel.getClass().getSimpleName() + " error: " + e.getMessage());
+                log.error("Dispatching to channel: " + channel.getClass().getName() + " error: " + e.getMessage());
             }
         };
     }
@@ -123,7 +133,12 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     }
 
     @Override
-    public void cancel() {
+    public AsyncEventDispatcher async() {
+        return new AsyncDispatcherWrapper(this, dispatchThreadPool);
+    }
+
+    @Override
+    public void close() {
         if (!isActive()) {
             log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already closed");
             return;

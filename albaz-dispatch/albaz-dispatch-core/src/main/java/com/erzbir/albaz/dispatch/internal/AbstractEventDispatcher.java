@@ -13,7 +13,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * <p>
- * 一个抽象的事件调度器, 实现了开关和拦截功能, 子类通过重写 {@link  #dispatchTo} 方法实现分发
+ * 一个抽象的 {@link EventDispatcher}, 实现了开关({@link #start()}, {@link #close()}) 和拦截功能, 子类通过重写 {@link #dispatchTo} 方法实现分发
+ * </p>
+ *
+ * <p>
+ * 如果一个 {@link Interceptor} 已经拦截了 {@link Event}, 就不会调用后续的 {@link Interceptor}
  * </p>
  *
  * @author Erzbir
@@ -22,9 +26,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @since 1.0.0
  */
 public abstract class AbstractEventDispatcher implements EventDispatcher {
-    protected final List<Interceptor<Event>> eventDispatchInterceptors = new ArrayList<>();
+    protected final List<Interceptor<Event>> interceptors = new ArrayList<>();
     protected final AtomicBoolean activated = new AtomicBoolean(false);
-    private final EventChannel<Event> globalEventChannel = GlobalEventChannel.INSTANCE;
+    protected final EventChannel<Event> globalEventChannel = GlobalEventChannel.INSTANCE;
     private final Log log = LogFactory.getLog(getClass());
 
     @Override
@@ -38,14 +42,12 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
             log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already shutdown, dispatching canceled");
             return;
         }
-        log.debug("Received event: " + event);
+        log.debug(String.format("Dispatching event: %s to channel: %s", event, channel.getClass().getSimpleName()));
         if (!intercept(event)) {
             event.intercepted();
             log.debug("Intercept event: " + event);
-            return;
         }
-        if (channel.isCanceled()) {
-            log.warn("EventChannel: " + channel.getClass().getSimpleName() + " is already shutdown, dispatching canceled");
+        if (event.isIntercepted()) {
             return;
         }
         dispatchTo(event, channel);
@@ -54,26 +56,20 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
     protected abstract <E extends Event> void dispatchTo(E event, EventChannel<E> channel);
 
     private boolean intercept(Event event) {
-        boolean flag = true;
-        for (Interceptor<Event> interceptor : eventDispatchInterceptors) {
-            flag &= interceptor.intercept(event);
+        for (Interceptor<Event> interceptor : interceptors) {
+            if (interceptor.getTargetClass().isInstance(event)) {
+                if (!interceptor.intercept(event)) {
+                    return false;
+                }
+            }
         }
-        return flag;
+        return true;
     }
 
+    @SuppressWarnings("unchecked")
     @Override
-    public void addInterceptor(Interceptor<Event> dispatchInterceptor) {
-        eventDispatchInterceptors.add(dispatchInterceptor);
-    }
-
-    @Override
-    public EventChannel<Event> getEventChannel() {
-        return globalEventChannel;
-    }
-
-    @Override
-    public void start() {
-        activated.set(true);
+    public <E extends Event> void addInterceptor(Interceptor<E> dispatchInterceptor) {
+        interceptors.add((Interceptor<Event>) dispatchInterceptor);
     }
 
     @Override
@@ -82,12 +78,8 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
     }
 
     @Override
-    public boolean isCanceled() {
-        return !activated.get();
-    }
-
-    @Override
-    public void cancel() {
-        activated.set(false);
+    public EventChannel<Event> getEventChannel() {
+        return globalEventChannel;
     }
 }
+

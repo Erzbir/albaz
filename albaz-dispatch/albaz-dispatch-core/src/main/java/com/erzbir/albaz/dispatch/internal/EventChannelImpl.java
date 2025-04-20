@@ -1,9 +1,9 @@
 package com.erzbir.albaz.dispatch.internal;
 
 
-import com.erzbir.albaz.common.Interceptor;
 import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.AbstractEvent;
+import com.erzbir.albaz.dispatch.event.CancelableEvent;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerHandle;
@@ -13,6 +13,7 @@ import com.erzbir.albaz.logging.LogFactory;
 
 import java.lang.ref.WeakReference;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -34,15 +35,11 @@ import java.util.function.Predicate;
  * </p>
  *
  * <p>
- * 在触发监听时根据 {@link Listener.ConcurrencyKind} 来决定并发时是否加锁
- * </p>
- *
- * <p>
- *     TODO: 重构为用 forward 实现过滤
+ * 在触发监听时根据 {@link Listener.TriggerType} 来决定是否并发,根据 {@link Listener.ConcurrencyKind} 来决定并发时是否加锁
  * </p>
  *
  * @author Erzbir
- * @see EventChannel
+ * @see AbstractEventChannel
  * @see Event
  * @see Listener
  * @see ListenerStatus
@@ -50,10 +47,10 @@ import java.util.function.Predicate;
  * @see SafeListener
  * @since 1.0.0
  */
-class EventChannelImpl<E extends Event> extends EventChannel<E> {
+class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
     protected final ListenerRegistries listenerRegistries = new ListenerRegistries();
     private final Log log = LogFactory.getLog(getClass());
-
+    private final String TAG = getClass().getSimpleName();
 
     public EventChannelImpl(Class<E> baseEventClass) {
         super(baseEventClass);
@@ -61,27 +58,40 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
 
     /**
      * <p>
-     * 不会广播被拦截或是被取消的事件
+     * 事件必须是一个 {@link AbstractEvent} 不会广播被拦截或是被取消的事件
      * </p>
      *
      * @param event 广播的事件
      * @throws IllegalArgumentException 事件不为 {@link AbstractEvent} 则会抛错
      */
-    @Override
-    public void broadcast(Event event) {
-        if (!(event instanceof AbstractEvent)) throw new IllegalArgumentException("Event must extend AbstractEvent");
-        if (event.isIntercepted()) {
-            log.debug("Event: {" + event + "} was intercepted, cancel broadcast");
+    void broadcast(Event event) {
+        log.debug("Broadcasting event: " + event);
+        if (isClosed()) {
+            log.warn("EventChannel: " + TAG + " is already shutdown, broadcasting canceled");
             return;
         }
-        if (((AbstractEvent) event).isCanceled()) {
-            log.debug("Event: {" + event + "} was canceled, cancel broadcast");
+        if (!(event instanceof AbstractEvent)) throw new IllegalArgumentException("Event must extend AbstractEvent");
+        if (event instanceof CancelableEvent cancelableEvent && cancelableEvent.isCanceled()) {
+            log.debug("Event: {" + event + "} was canceled, broadcasting canceled");
+            return;
+        }
+        if (event.isIntercepted()) {
+            log.debug("Event: {" + event + "} was intercepted, broadcasting canceled");
             return;
         }
         if (listenerRegistries.isEmpty()) {
-            log.debug("EventChannel: " + getClass().getSimpleName() + " has no listeners, broadcasting canceled");
+            log.debug("EventChannel: " + TAG + " has no listeners, broadcasting canceled");
+        }
+        // 防止重复广播事件, 事件在监听器中被异步修改
+        Lock broadcastLock = event.getBroadcastLock();
+        try {
+            broadcastLock.lockInterruptibly();
+        } catch (InterruptedException e) {
+            log.debug("EventChannel: " + TAG + " was interrupted, broadcasting canceled");
+            return;
         }
         callListeners((AbstractEvent) event);
+        broadcastLock.unlock();
     }
 
     @SuppressWarnings({"unchecked", "rawtypes"})
@@ -115,8 +125,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         });
     }
 
-    @Override
-    public Listener<E> createListener(Function<E, ListenerStatus> handle) {
+    private Listener<E> createListener(Function<E, ListenerStatus> handle) {
         return createSafeListener(handle::apply);
     }
 
@@ -149,34 +158,12 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         return new SafeListener(listener, listenerRegistries);
     }
 
-    private boolean intercept(Listener<E> listener) {
-        boolean flag = true;
-        for (Interceptor<Listener<E>> interceptor : interceptors) {
-            flag &= interceptor.intercept(listener);
-        }
-        return flag;
-    }
-
-    /**
-     * <p>
-     * 在 {@link Listener.ConcurrencyKind#CONCURRENT} 模式下会并发执行监听执行器. {@link Listener.ConcurrencyKind#LOCKED} 模式下则是加锁同步, 会阻塞当前的分发线程
-     * </p>
-     *
-     * @param listenerRegistry 监听器注册表
-     * @param event            触发监听的事件
-     * @see Listener.ConcurrencyKind
-     */
     @SuppressWarnings({"unchecked"})
     private void process(ListenerRegistry listenerRegistry, AbstractEvent event) {
         SafeListener listener = (SafeListener) listenerRegistry.listener();
         String name = listener.delegate.getClass().getSimpleName();
         String rName = name.isEmpty() ? listener.delegate.getClass().getName() : name;
-        log.debug("Broadcasting event: " + event + " to listener: " + rName);
-        if (!intercept(listener)) {
-            listener.truncate();
-            log.info("Listener: " + rName + " was intercepted");
-            return;
-        }
+        log.debug("Calling event: " + event + " in listener: " + rName);
         Runnable invokeRunnable = createInvokeRunnable(event, listener);
         trigger(listener.triggerType(), invokeRunnable);
     }
@@ -224,9 +211,8 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         public void dispose() {
             if (isDisposed()) {
                 return;
-            } else {
-                disposed.set(true);
             }
+            disposed.set(true);
             SafeListener safeListener = listenerRef.get();
             if (safeListener != null) {
                 safeListener.inactive();
@@ -235,7 +221,6 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             listenerRef = null;
         }
 
-        @Override
         public boolean isDisposed() {
             return disposed.get();
         }
@@ -311,11 +296,20 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
         }
 
         @Override
+        public Priority priority() {
+            return delegate.priority();
+        }
+
+        @Override
         public ListenerStatus onEvent(E event) {
+            if (!active.get()) {
+                remove();
+                return ListenerStatus.STOP;
+            }
             try {
-                if (!active.get() || Thread.currentThread().isInterrupted()) {
-                    inactive();
-                    return ListenerStatus.STOP;
+                if (Thread.currentThread().isInterrupted()) {
+                    truncate();
+                    return ListenerStatus.TRUNCATED;
                 }
                 ListenerStatus listenerStatus = delegate.onEvent(event);
                 switch (listenerStatus) {
@@ -326,7 +320,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
                 }
                 return listenerStatus;
             } catch (Throwable e) {
-                log.error("Listener error: " + e.getMessage(), e);
+                log.error(String.format("Listener %s error: %s", delegate.getClass().getName(), e.getMessage()), e);
                 truncate();
                 return ListenerStatus.TRUNCATED;
             } finally {
@@ -336,6 +330,7 @@ class EventChannelImpl<E extends Event> extends EventChannel<E> {
             }
         }
     }
+
 }
 
 

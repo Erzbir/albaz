@@ -7,13 +7,15 @@ import com.erzbir.albaz.dispatch.listener.ListenerStatus;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.InvocationTargetException;
+
 class EventChannelImplTest {
 
     @Test
     void close() {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         eventChannel.close();
-        Assertions.assertTrue(eventChannel.isCanceled());
+        Assertions.assertTrue(eventChannel.isClosed());
     }
 
     @Test
@@ -21,22 +23,14 @@ class EventChannelImplTest {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         eventChannel.close();
         eventChannel.open();
-        Assertions.assertFalse(eventChannel.isCanceled());
-
+        Assertions.assertFalse(eventChannel.isClosed());
     }
 
     @Test
-    void cancel() {
-        EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.cancel();
-        Assertions.assertTrue(eventChannel.isCanceled());
-    }
-
-    @Test
-    void isCanceled() {
+    void isClosed() {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         eventChannel.close();
-        Assertions.assertTrue(eventChannel.isCanceled());
+        Assertions.assertTrue(eventChannel.isClosed());
     }
 
     @Test
@@ -83,18 +77,10 @@ class EventChannelImplTest {
     }
 
     @Test
-    void createListener() {
-        EventChannelImpl<TestEvent> eventChannel = new EventChannelImpl<>(TestEvent.class);
-        Listener<TestEvent> listener = eventChannel.createListener(event -> ListenerStatus.CONTINUE);
-        Assertions.assertNotNull(listener);
-        Assertions.assertEquals(EventChannelImpl.SafeListener.class, listener.getClass());
-    }
-
-    @Test
-    void filter() {
+    void filter() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
         EventChannel<TestEvent> testEventEventChannel = eventChannel.filterInstance(TestEvent.class);
-        EventChannel<TestEvent> testEventEventChannel1 = testEventEventChannel.filter(event -> {
+        EventChannel<Event> testEventEventChannel1 = eventChannel.filter(event -> {
             Assertions.assertEquals(TestEvent.class, event.getClass());
             return true;
         });
@@ -102,12 +88,19 @@ class EventChannelImplTest {
             @Override
             public ListenerStatus onEvent(TestEvent event) {
                 Assertions.assertEquals(TestEvent.class, event.getClass());
+                System.err.println(event);
                 return ListenerStatus.STOP;
             }
         });
-        testEventEventChannel.broadcast(new TestEvent(this));
+        eventChannel.registerListener(TestNamedEvent.class, event -> {
+            System.err.println(event);
+            return ListenerStatus.CONTINUE;
+        });
+//        testEventEventChannel.close();
+        eventChannel.broadcast(new TestNamedEvent(this, "test"));
+        eventChannel.broadcast(new TestEvent(this));
         Assertions.assertEquals(TestEvent.class, testEventEventChannel.getBaseEventClass());
-        Assertions.assertEquals(TestEvent.class, testEventEventChannel1.getBaseEventClass());
+        Assertions.assertEquals(Event.class, testEventEventChannel1.getBaseEventClass());
     }
 
     @Test
