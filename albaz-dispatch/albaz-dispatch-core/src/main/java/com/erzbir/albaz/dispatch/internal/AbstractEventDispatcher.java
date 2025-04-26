@@ -28,32 +28,30 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public abstract class AbstractEventDispatcher implements EventDispatcher {
     protected final List<Interceptor<Event>> interceptors = new ArrayList<>();
     protected final AtomicBoolean activated = new AtomicBoolean(false);
-    protected final EventChannel<Event> globalEventChannel = GlobalEventChannel.INSTANCE;
+    protected final GlobalEventChannel globalEventChannel = GlobalEventChannel.INSTANCE;
     private final Log log = LogFactory.getLog(getClass());
 
     @Override
     public void dispatch(Event event) {
-        dispatch(event, globalEventChannel);
-    }
-
-    @Override
-    public <E extends Event> void dispatch(E event, EventChannel<E> channel) {
+        if (event == null) {
+            throw new IllegalArgumentException("Event must not be null");
+        }
         if (!isActive()) {
-            log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already shutdown, dispatching canceled");
+            log.warn("EventDispatcher: [{}] is already shutdown, dispatching canceled", getClass().getSimpleName());
             return;
         }
-        log.debug(String.format("Dispatching event: %s to channel: %s", event, channel.getClass().getSimpleName()));
+        log.debug("Dispatching event: [{}] to channel: [{}]", event, getEventChannel().getClass().getSimpleName());
         if (!intercept(event)) {
             event.intercepted();
-            log.debug("Intercept event: " + event);
+            log.debug("Intercept event: [{}]", event);
         }
         if (event.isIntercepted()) {
             return;
         }
-        dispatchTo(event, channel);
+        dispatchTo(event);
     }
 
-    protected abstract <E extends Event> void dispatchTo(E event, EventChannel<E> channel);
+    protected abstract void dispatchTo(Event event);
 
     private boolean intercept(Event event) {
         for (Interceptor<Event> interceptor : interceptors) {
@@ -68,7 +66,7 @@ public abstract class AbstractEventDispatcher implements EventDispatcher {
 
     @SuppressWarnings("unchecked")
     @Override
-    public <E extends Event> void addInterceptor(Interceptor<E> dispatchInterceptor) {
+    public void addInterceptor(Interceptor<? extends Event> dispatchInterceptor) {
         interceptors.add((Interceptor<Event>) dispatchInterceptor);
     }
 

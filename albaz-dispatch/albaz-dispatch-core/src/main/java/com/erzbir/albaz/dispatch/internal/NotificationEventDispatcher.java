@@ -2,7 +2,6 @@ package com.erzbir.albaz.dispatch.internal;
 
 import com.erzbir.albaz.dispatch.AsyncEventDispatcher;
 import com.erzbir.albaz.dispatch.EventDispatcher;
-import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.CancelableEvent;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.logging.Log;
@@ -11,6 +10,7 @@ import com.erzbir.albaz.logging.LogFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -23,7 +23,7 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
     private final Log log = LogFactory.getLog(NotificationEventDispatcher.class);
     private final Object lock = new Object();
     private final AtomicInteger count = new AtomicInteger(0);
-    private final ExecutorService dispatchThreadPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Dispatch-Thread-", 0).factory());
+    private ExecutorService dispatchThreadPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Dispatch-Thread-", 0).factory());
     private Thread guardThread;
 
     public NotificationEventDispatcher() {
@@ -31,39 +31,40 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
     }
 
     @Override
-    protected <E extends Event> void dispatchTo(E event, EventChannel<E> channel) {
-        createDispatchTask(channel, event).run();
-    }
-
-    @Override
-    public <E extends Event> CompletableFuture<Void> dispatchAsync(E event, EventChannel<E> channel) {
-        return CompletableFuture.runAsync(() -> dispatch(event, channel), dispatchThreadPool);
+    protected void dispatchTo(Event event) {
+        createDispatchTask(event).run();
     }
 
     @Override
     public CompletableFuture<Void> dispatchAsync(Event event) {
-        return dispatchAsync(event, globalEventChannel);
+        if (event == null) {
+            throw new IllegalArgumentException("Event must not be null");
+        }
+        return CompletableFuture.runAsync(() -> dispatch(event), dispatchThreadPool).whenComplete((res, ex) -> {
+            System.exit(1);
+            log.error("Dispatching event: [{}] failed, [{}]", event, ex);
+        });
     }
 
-
-    private <E extends Event> void runDispatchTask(EventChannel<E> channel, E event) {
+    private <E extends Event> void runDispatchTask(E event) {
         try {
             if (event instanceof CancelableEvent cancelableEvent) {
                 if (cancelableEvent.isCanceled()) {
                     return;
                 }
             }
-            EventChannelDispatcher.INSTANCE.broadcast(event);
+            globalEventChannel.broadcast(event);
         } catch (Throwable e) {
-            log.error("Dispatching to channel: " + channel.getClass().getName() + " error: " + e.getMessage());
+            log.error("Dispatching to channel: [{}] error: [{}]", getEventChannel().getClass().getName(), e);
+            Thread.currentThread().interrupt();
         }
     }
 
-    private <E extends Event> Runnable createDispatchTask(EventChannel<E> channel, E event) {
+    private <E extends Event> Runnable createDispatchTask(E event) {
         count.getAndIncrement();
         return () -> {
             try {
-                runDispatchTask(channel, event);
+                runDispatchTask(event);
             } finally {
                 taskCompleted();
             }
@@ -81,7 +82,12 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
 
     @Override
     public void start() {
+        if (isActive()) {
+            log.warn("EventDispatcher: [{}] is already started, can't start again", getClass().getSimpleName());
+            return;
+        }
         activated.set(true);
+        dispatchThreadPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Dispatch-Thread-", 0).factory());
     }
 
     @Override
@@ -97,7 +103,8 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
                     lock.wait(timeout);
                 }
             } catch (InterruptedException e) {
-                log.error("Dispatching error when join thread: " + Thread.currentThread().getName());
+                Thread.currentThread().interrupt();
+                log.error("Dispatching error when join thread: [{}]", Thread.currentThread().getName());
             }
         }
     }
@@ -116,7 +123,7 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
     @Override
     public void close() {
         if (!isActive()) {
-            log.warn("EventDispatcher: " + getClass().getSimpleName() + " is already closed");
+            log.warn("EventDispatcher: [{}] is already closed, can't close again", getClass().getSimpleName());
             return;
         }
         activated.set(false);
@@ -124,6 +131,9 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
         synchronized (lock) {
             lock.notifyAll();
         }
+
+        ExecutorServiceShutdownHelper.shutdown(dispatchThreadPool, 100, TimeUnit.MILLISECONDS);
+
         if (guardThread != null) {
             guardThread.interrupt();
             guardThread = null;

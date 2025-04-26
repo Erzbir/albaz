@@ -4,12 +4,15 @@ import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerStatus;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import java.lang.reflect.InvocationTargetException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 class EventChannelImplTest {
+    Log log = LogFactory.getLog(EventChannelImplTest.class);
 
     @Test
     void close() {
@@ -40,82 +43,91 @@ class EventChannelImplTest {
     }
 
     @Test
-    void registerListener() {
+    void registerListener() throws InterruptedException {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
+        AtomicBoolean flag = new AtomicBoolean(false);
         eventChannel.registerListener(TestEvent.class, event -> {
-            Assertions.assertEquals(TestEvent.class, event.getClass());
+            flag.set(true);
             return ListenerStatus.CONTINUE;
         });
-        Assertions.assertNotNull(eventChannel.getListeners().iterator().next());
+        eventChannel.broadcast(new TestEvent(this));
+        Thread.sleep(100);
+        Assertions.assertTrue(flag.get());
     }
 
     @Test
-    void subscribe() {
+    void subscribe() throws InterruptedException {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.subscribe(TestEvent.class, event -> {
-            Assertions.assertEquals(TestEvent.class, event.getClass());
+        AtomicBoolean flag = new AtomicBoolean(false);
+        eventChannel.subscribe(Event.class, event -> {
+            flag.set(true);
             return ListenerStatus.CONTINUE;
         });
-        Assertions.assertNotNull(eventChannel.getListeners().iterator().next());
-        Assertions.assertEquals(ListenerStatus.CONTINUE, eventChannel.getListeners().iterator().next().onEvent(new TestEvent(this)));
+        eventChannel.broadcast(new TestEvent(this));
+        Thread.sleep(100);
+        Assertions.assertTrue(flag.get());
     }
 
     @Test
-    void subscribeOnce() {
+    void subscribeOnce() throws InterruptedException {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.subscribeOnce(TestEvent.class, event -> Assertions.assertEquals(TestEvent.class, event.getClass()));
-        Assertions.assertNotNull(eventChannel.getListeners().iterator().next());
-        Assertions.assertEquals(ListenerStatus.STOP, eventChannel.getListeners().iterator().next().onEvent(new TestEvent(this)));
+        AtomicBoolean flag = new AtomicBoolean(false);
+        eventChannel.subscribeOnce(Event.class, event -> flag.set(true));
+        eventChannel.broadcast(new TestEvent(this));
+        Thread.sleep(100);
+        Assertions.assertTrue(flag.get());
     }
 
     @Test
-    void subscribeAlways() {
+    void subscribeAlways() throws InterruptedException {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.subscribeAlways(TestEvent.class, event -> Assertions.assertEquals(TestEvent.class, event.getClass()));
-        Assertions.assertNotNull(eventChannel.getListeners().iterator().next());
-        Assertions.assertEquals(ListenerStatus.CONTINUE, eventChannel.getListeners().iterator().next().onEvent(new TestEvent(this)));
+        AtomicBoolean flag = new AtomicBoolean(false);
+        eventChannel.subscribeAlways(Event.class, event -> flag.set(true));
+        eventChannel.broadcast(new TestEvent(this));
+        Thread.sleep(100);
+        Assertions.assertTrue(flag.get());
+        flag.set(false);
+        eventChannel.broadcast(new TestEvent(this));
+        Thread.sleep(100);
+        Assertions.assertTrue(flag.get());
     }
 
     @Test
-    void filter() throws InvocationTargetException, IllegalAccessException, NoSuchMethodException {
+    void filter() throws InterruptedException {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        EventChannel<TestEvent> testEventEventChannel = eventChannel.filterInstance(TestEvent.class);
+        AtomicBoolean flag = new AtomicBoolean(false);
+        AtomicBoolean flag2 = new AtomicBoolean(false);
         EventChannel<Event> testEventEventChannel1 = eventChannel.filter(event -> {
-            Assertions.assertEquals(TestEvent.class, event.getClass());
+            flag.set(true);
             return true;
         });
-        testEventEventChannel.registerListener(TestEvent.class, new Listener<TestEvent>() {
-            @Override
-            public ListenerStatus onEvent(TestEvent event) {
-                Assertions.assertEquals(TestEvent.class, event.getClass());
-                System.err.println(event);
-                return ListenerStatus.STOP;
-            }
+        testEventEventChannel1.subscribeAlways(TestEvent.class, event -> {
+            flag2.set(true);
         });
-        eventChannel.registerListener(TestNamedEvent.class, event -> {
-            System.err.println(event);
-            return ListenerStatus.CONTINUE;
-        });
-//        testEventEventChannel.close();
         eventChannel.broadcast(new TestNamedEvent(this, "test"));
         eventChannel.broadcast(new TestEvent(this));
-        Assertions.assertEquals(TestEvent.class, testEventEventChannel.getBaseEventClass());
-        Assertions.assertEquals(Event.class, testEventEventChannel1.getBaseEventClass());
+        Thread.sleep(100);
+        Assertions.assertTrue(flag.get());
+        Assertions.assertTrue(flag2.get());
+
+
     }
 
     @Test
-    void filterInstance() {
+    void filterInstance() throws InterruptedException {
         EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
+        AtomicBoolean flag = new AtomicBoolean(false);
         EventChannel<NamedEvent> testEventEventChannel = eventChannel.filterInstance(NamedEvent.class);
         EventChannel<TestNamedEvent> testEventEventChannel1 = testEventEventChannel.filterInstance(TestNamedEvent.class);
-        Assertions.assertEquals(NamedEvent.class, testEventEventChannel.getBaseEventClass());
-        Assertions.assertEquals(TestNamedEvent.class, testEventEventChannel1.getBaseEventClass());
-    }
-
-    @Test
-    void getListeners() {
-        EventChannelImpl<Event> eventChannel = new EventChannelImpl<>(Event.class);
-        eventChannel.subscribeOnce(TestEvent.class, event -> Assertions.assertEquals(TestEvent.class, event.getClass()));
-        Assertions.assertNotNull(eventChannel.getListeners().iterator().next());
+        testEventEventChannel1.registerListener(TestNamedEvent.class, new Listener<>() {
+            @Override
+            public ListenerStatus onEvent(TestNamedEvent event) {
+                flag.set(true);
+                return ListenerStatus.CONTINUE;
+            }
+        });
+        eventChannel.broadcast(new TestNamedEvent(this, "sass"));
+        Thread.sleep(100);
+        Assertions.assertTrue(flag.get());
     }
 }

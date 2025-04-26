@@ -50,7 +50,6 @@ import java.util.function.Predicate;
 class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
     protected final ListenerRegistries listenerRegistries = new ListenerRegistries();
     private final Log log = LogFactory.getLog(getClass());
-    private final String TAG = getClass().getSimpleName();
 
     public EventChannelImpl(Class<E> baseEventClass) {
         super(baseEventClass);
@@ -65,29 +64,30 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
      * @throws IllegalArgumentException 事件不为 {@link AbstractEvent} 则会抛错
      */
     void broadcast(Event event) {
-        log.debug("Broadcasting event: " + event);
+        log.debug("Broadcasting event: [{}]", event);
         if (isClosed()) {
-            log.warn("EventChannel: " + TAG + " is already shutdown, broadcasting canceled");
+            log.warn("EventChannel: [{}] is already shutdown, broadcasting canceled", getClass().getSimpleName());
             return;
         }
         if (!(event instanceof AbstractEvent)) throw new IllegalArgumentException("Event must extend AbstractEvent");
         if (event instanceof CancelableEvent cancelableEvent && cancelableEvent.isCanceled()) {
-            log.debug("Event: {" + event + "} was canceled, broadcasting canceled");
+            log.debug("Event: [{}] is canceled, broadcasting canceled", event);
             return;
         }
         if (event.isIntercepted()) {
-            log.debug("Event: {" + event + "} was intercepted, broadcasting canceled");
+            log.debug("Event: [{}] is intercepted, broadcasting canceled", event);
             return;
         }
         if (listenerRegistries.isEmpty()) {
-            log.debug("EventChannel: " + TAG + " has no listeners, broadcasting canceled");
+            log.debug("EventChannel: [{}] has no listeners, broadcasting canceled", getClass().getSimpleName());
         }
         // 防止重复广播事件, 事件在监听器中被异步修改
         Lock broadcastLock = event.getBroadcastLock();
         try {
             broadcastLock.lockInterruptibly();
         } catch (InterruptedException e) {
-            log.debug("EventChannel: " + TAG + " was interrupted, broadcasting canceled");
+            log.debug("EventChannel: [{}] is interrupted, broadcasting canceled", getClass().getSimpleName());
+            Thread.currentThread().interrupt();
             return;
         }
         callListeners((AbstractEvent) event);
@@ -97,6 +97,9 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
+        if (eventType == null && listener == null) {
+            throw new IllegalArgumentException("EventType and listener must not be null");
+        }
         SafeListener safeListener = createSafeListener((Listener<E>) listener);
         listenerRegistries.addListener(new ListenerRegistry((Class) eventType, safeListener));
         return new WeakListenerHandle(safeListener);
@@ -105,12 +108,18 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
     @SuppressWarnings({"unchecked"})
     @Override
     public <T extends E> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerStatus> handle) {
+        if (eventType == null && handle == null) {
+            throw new IllegalArgumentException("EventType and handle must not be null");
+        }
         Listener<E> listener = createListener((Function<E, ListenerStatus>) handle);
         return registerListener((Class<E>) eventType, listener);
     }
 
     @Override
     public <T extends E> ListenerHandle subscribeOnce(Class<T> eventType, Consumer<T> handle) {
+        if (eventType == null && handle == null) {
+            throw new IllegalArgumentException("EventType and handle must not be null");
+        }
         return subscribe(eventType, event -> {
             handle.accept(event);
             return ListenerStatus.STOP;
@@ -119,6 +128,9 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
 
     @Override
     public <T extends E> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle) {
+        if (eventType == null && handle == null) {
+            throw new IllegalArgumentException("EventType and handle must not be null");
+        }
         return subscribe(eventType, event -> {
             handle.accept(event);
             return ListenerStatus.CONTINUE;
@@ -131,20 +143,20 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public EventChannel<E> filter(Predicate<? extends E> predicate) {
+    public EventChannel<E> filter(Predicate<? super E> predicate) {
+        if (predicate == null) {
+            throw new IllegalArgumentException("Predicate must not be null");
+        }
         return new FilterEventChannel(this, predicate);
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
     public <T extends E> EventChannel<T> filterInstance(Class<T> eventType) {
+        if (eventType == null) {
+            throw new IllegalArgumentException("EventType must not be null");
+        }
         return new FilterEventChannel(this, eventType);
-    }
-
-    @SuppressWarnings({"unchecked", "rawtypes"})
-    @Override
-    public Iterable<Listener<Event>> getListeners() {
-        return (Iterable) listenerRegistries.getListeners().stream().map(ListenerRegistry::listener).toList();
     }
 
     private void callListeners(AbstractEvent event) {
@@ -163,7 +175,7 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
         SafeListener listener = (SafeListener) listenerRegistry.listener();
         String name = listener.delegate.getClass().getSimpleName();
         String rName = name.isEmpty() ? listener.delegate.getClass().getName() : name;
-        log.debug("Calling event: " + event + " in listener: " + rName);
+        log.debug("Calling event: [{}] in listener: [{}]", event, rName);
         Runnable invokeRunnable = createInvokeRunnable(event, listener);
         trigger(listener.triggerType(), invokeRunnable);
     }
@@ -188,7 +200,7 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
                 listener.onEvent((E) event);
             } catch (Throwable e) {
                 listener.truncate();
-                log.error("Calling listener error: " + e.getMessage(), e);
+                log.error("Calling listener error: [{}]" + e.getMessage());
             } finally {
                 if (lock != null) {
                     lock.unlock();
@@ -320,7 +332,7 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
                 }
                 return listenerStatus;
             } catch (Throwable e) {
-                log.error(String.format("Listener %s error: %s", delegate.getClass().getName(), e.getMessage()), e);
+                log.error("Listener {} error: {}", delegate.getClass().getName(), e.getMessage());
                 truncate();
                 return ListenerStatus.TRUNCATED;
             } finally {

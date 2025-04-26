@@ -2,6 +2,8 @@ package com.erzbir.albaz.dispatch.internal;
 
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 
 import java.util.EnumMap;
 import java.util.List;
@@ -15,12 +17,14 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 final class ListenerRegistries {
+    private final Log log = LogFactory.getLog(ListenerRegistries.class);
     private final EnumMap<Listener.Priority, List<ListenerRegistry>> listeners = new EnumMap<>(Listener.Priority.class);
 
     public ListenerRegistries() {
         listeners.put(Listener.Priority.HIGH, new CopyOnWriteArrayList<>());
-        listeners.put(Listener.Priority.LOW, new CopyOnWriteArrayList<>());
         listeners.put(Listener.Priority.NORMAL, new CopyOnWriteArrayList<>());
+        listeners.put(Listener.Priority.LOW, new CopyOnWriteArrayList<>());
+        listeners.put(Listener.Priority.MONITOR, new CopyOnWriteArrayList<>());
     }
 
     public void addListener(ListenerRegistry registry) {
@@ -54,13 +58,20 @@ final class ListenerRegistries {
     public <E extends Event> void callListeners(E event, BiConsumer<ListenerRegistry, E> consumer) {
         callListeners(event, Listener.Priority.HIGH, consumer);
         if (event.isIntercepted()) {
+            log.debug("Event: [{}] may be intercepted by [{}] listener", event, Listener.Priority.HIGH);
             return;
         }
         callListeners(event, Listener.Priority.NORMAL, consumer);
         if (event.isIntercepted()) {
+            log.debug("Event: [{}] may be intercepted by [{}] listener", event, Listener.Priority.NORMAL);
             return;
         }
         callListeners(event, Listener.Priority.LOW, consumer);
+        if (event.isIntercepted()) {
+            log.debug("Event: [{}] may be intercepted by [{}] listener", event, Listener.Priority.LOW);
+            return;
+        }
+        callListeners(event, Listener.Priority.MONITOR, consumer);
     }
 
     public boolean isEmpty() {

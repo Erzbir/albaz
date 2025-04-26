@@ -4,11 +4,11 @@ plugins {
 }
 
 dependencies {
-    implementation(project(":albaz-plugin:albaz-plugin-api"))
-    implementation(project(":albaz-plugin:albaz-plugin-core"))
+    compileOnly(project(":albaz-plugin:albaz-plugin-api"))
     implementation("com.google.code.gson:gson:2.11.0")
 }
 
-tasks.withType<JavaExec> {
-
+tasks.shadowJar {
+    archiveClassifier.set("")
+    mergeServiceFiles()
 }

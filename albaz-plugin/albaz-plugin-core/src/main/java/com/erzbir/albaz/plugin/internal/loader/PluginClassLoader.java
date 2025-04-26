@@ -18,9 +18,13 @@ public class PluginClassLoader extends URLClassLoader {
 
     private static final String JAVA_PACKAGE_PREFIX = "java.";
     private static final String JAVAX_PACKAGE_PREFIX = "javax.";
-    private static final String PLUGIN_PACKAGE_PREFIX = "com.erzbir.albaz.plugin.";
+    private static final String PLUGIN_PACKAGE_PREFIX = "com.erzbir.albaz.";
 
     private boolean closed;
+
+    public PluginClassLoader() {
+        super(new URL[0]);
+    }
 
     public PluginClassLoader(ClassLoader parent) {
         super(new URL[0], parent);
@@ -43,14 +47,21 @@ public class PluginClassLoader extends URLClassLoader {
     public Class<?> loadClass(String className) throws ClassNotFoundException {
         synchronized (getClassLoadingLock(className)) {
             if (className.startsWith(JAVA_PACKAGE_PREFIX) || className.startsWith(JAVAX_PACKAGE_PREFIX)) {
+                log.trace("System class: [{}] is delegated to SystemClassLoader", className);
                 return findSystemClass(className);
             }
+
             if (className.startsWith(PLUGIN_PACKAGE_PREFIX)) {
-                return getParent().loadClass(className);
+                log.trace("System class: [{}] is delegated to SystemClassLoader", className);
+                ClassLoader parent = getParent();
+                if (parent != null) {
+                    return parent.loadClass(className);
+                }
             }
 
             Class<?> loadedClass = findLoadedClass(className);
             if (loadedClass != null) {
+                log.trace("Found loaded class [{}]", className);
                 return loadedClass;
             }
 
@@ -58,18 +69,19 @@ public class PluginClassLoader extends URLClassLoader {
                 Class<?> c = findClass(className);
 
                 if (c != null) {
+                    log.trace("Found class [{}] in classpath", className);
                     return c;
                 }
-            } catch (ClassNotFoundException e) {
-                getParent().loadClass(className);
+            } catch (ClassNotFoundException ignored) {
+
             }
         }
 
         throw new ClassNotFoundException(className);
     }
 
-    public Class<?> defineClass(String className, byte[] bytes) {
-        return defineClass(className, bytes, 0, bytes.length);
+    public void defineClass(String className, byte[] bytes) {
+        defineClass(className, bytes, 0, bytes.length);
     }
 
     @Override

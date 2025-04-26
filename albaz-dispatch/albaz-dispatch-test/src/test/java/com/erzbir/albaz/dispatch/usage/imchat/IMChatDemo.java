@@ -22,7 +22,7 @@ public class IMChatDemo {
     public static void main(String[] args) throws Exception {
         IMChatDemo IMChatDemo = new IMChatDemo();
         AsyncEventDispatcher eventDispatcher = AsyncEventDispatcher.of(EventDispatcherProvider.INSTANCE.getInstance("com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher"));
-        eventDispatcher = eventDispatcher.async();
+//        eventDispatcher = eventDispatcher.async();
         try {
             IMChatDemo.demoRun(eventDispatcher);
 
@@ -79,6 +79,8 @@ public class IMChatDemo {
         });
 
         eventDispatcher.addInterceptor(new KeywordsInterceptor());
+        eventDispatcher.addInterceptor(new UserInterceptor());
+
 
         // Client starts receiving
         IMClient.receive();
@@ -89,13 +91,24 @@ public class IMChatDemo {
         IMServer.sendGroupMessage(new GroupMessage("GroupA", "Hi fxxk you"));
     }
 
+    static class UserInterceptor implements Interceptor<UserMessageEvent> {
+
+        @Override
+        public boolean intercept(UserMessageEvent target) {
+//            throw new IllegalArgumentException("asss");
+            return target.getMessage().user.equals("Albaz");
+        }
+
+        @Override
+        public Class<UserMessageEvent> getTargetClass() {
+            return UserMessageEvent.class;
+        }
+    }
+
     static class KeywordsInterceptor implements Interceptor<GroupMessageEvent> {
         @Override
         public boolean intercept(GroupMessageEvent target) {
-            if (target instanceof GroupMessageEvent groupMessageEvent) {
-                return !groupMessageEvent.message.message.contains("fxxk");
-            }
-            return true;
+            return !target.message.message.contains("fxxk");
         }
 
         @Override

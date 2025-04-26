@@ -1,6 +1,6 @@
 package com.erzbir.albaz.plugin;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 /**
@@ -10,13 +10,7 @@ import java.util.List;
 public interface PluginManager {
     void loadPlugins();
 
-    void loadPlugins(String pluginDir);
-
-    void loadPlugin(File file);
-
-    void reloadPlugins();
-
-    void reloadPlugin(String pluginId);
+    void loadPlugin(Path path);
 
     void enablePlugin(String pluginId);
 
@@ -30,13 +24,7 @@ public interface PluginManager {
 
     void unloadPlugin(String pluginId);
 
-    int size();
-
     Plugin getPlugin(String pluginId);
 
     List<Plugin> getPlugins();
-
-    PluginHandle getPluginHandle(String pluginId);
-
-    List<PluginHandle> getPluginHandles();
 }

@@ -9,10 +9,10 @@ import com.erzbir.albaz.dispatch.event.Event;
  * @author Erzbir
  * @since 1.0.0
  */
-public final class EventChannelDispatcher<E extends Event> extends EventChannelImpl<E> {
-    public static final EventChannelDispatcher<Event> INSTANCE = new EventChannelDispatcher<>(Event.class);
+public final class EventChannelDispatcher extends EventChannelImpl<Event> {
+    public static final EventChannelDispatcher INSTANCE = new EventChannelDispatcher(Event.class);
 
-    private EventChannelDispatcher(Class<E> baseEventClass) {
+    private EventChannelDispatcher(Class<Event> baseEventClass) {
         super(baseEventClass);
     }
 }

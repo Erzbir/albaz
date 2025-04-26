@@ -24,17 +24,19 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.spi.LocationAwareLogger;
 
+import java.io.Serial;
 import java.io.Serializable;
 import java.util.function.Function;
 import java.util.logging.LogRecord;
 
 /**
- * Spring's common JCL adapter behind {@link LogFactory}.
+ * JCL adapter behind {@link LogFactory}.
  * Detects the presence of Log4j 2.x / SLF4J, falling back to {@code java.util.logging}.
  *
  * @author Juergen Hoeller
  * @author Sebastien Deleuze
- * @since 5.1
+ * @author Erzbir
+ * @since 1.0
  */
 final class LogAdapter {
 
@@ -133,7 +135,6 @@ final class LogAdapter {
     }
 
 
-    @SuppressWarnings("serial")
     private static class Log4jLog implements Log, Serializable {
 
         private static final String FQCN = Log4jLog.class.getName();
@@ -187,7 +188,7 @@ final class LogAdapter {
 
         @Override
         public void fatal(Object message) {
-            log(Level.FATAL, message, null);
+            log(Level.FATAL, message, (Throwable) null);
         }
 
         @Override
@@ -196,8 +197,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void fatal(String format, Object... args) {
+            log(Level.FATAL, format, args);
+        }
+
+        @Override
         public void error(Object message) {
-            log(Level.ERROR, message, null);
+            log(Level.ERROR, message, (Throwable) null);
         }
 
         @Override
@@ -206,8 +212,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void error(String format, Object... args) {
+            log(Level.ERROR, format, args);
+        }
+
+        @Override
         public void warn(Object message) {
-            log(Level.WARN, message, null);
+            log(Level.WARN, message, (Throwable) null);
         }
 
         @Override
@@ -216,8 +227,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void warn(String format, Object... args) {
+            log(Level.WARN, format, args);
+        }
+
+        @Override
         public void info(Object message) {
-            log(Level.INFO, message, null);
+            log(Level.INFO, message, (Throwable) null);
         }
 
         @Override
@@ -226,8 +242,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void info(String format, Object... args) {
+            log(Level.INFO, format, args);
+        }
+
+        @Override
         public void debug(Object message) {
-            log(Level.DEBUG, message, null);
+            log(Level.DEBUG, message, (Throwable) null);
         }
 
         @Override
@@ -236,13 +257,23 @@ final class LogAdapter {
         }
 
         @Override
+        public void debug(String format, Object... args) {
+            log(Level.DEBUG, format, args);
+        }
+
+        @Override
         public void trace(Object message) {
-            log(Level.TRACE, message, null);
+            log(Level.TRACE, message, (Throwable) null);
         }
 
         @Override
         public void trace(Object message, Throwable exception) {
             log(Level.TRACE, message, exception);
+        }
+
+        @Override
+        public void trace(String format, Object... args) {
+            log(Level.TRACE, format, args);
         }
 
         private void log(Level level, Object message, Throwable exception) {
@@ -259,13 +290,24 @@ final class LogAdapter {
             }
         }
 
+        private void log(Level level, Object message, Object... params) {
+            if (message instanceof String text) {
+                if (params != null && params.length > 0) {
+                    this.logger.logIfEnabled(FQCN, level, null, text, params);
+
+                } else {
+                    this.logger.logIfEnabled(FQCN, level, null, text);
+                }
+            }
+        }
+
+        @Serial
         protected Object readResolve() {
             return new Log4jLog(this.name);
         }
     }
 
 
-    @SuppressWarnings("serial")
     private static class Slf4jLog<T extends Logger> implements Log, Serializable {
 
         protected final String name;
@@ -318,6 +360,11 @@ final class LogAdapter {
         }
 
         @Override
+        public void fatal(String format, Object... args) {
+            error(format, args);
+        }
+
+        @Override
         public void error(Object message) {
             if (message instanceof String || this.logger.isErrorEnabled()) {
                 this.logger.error(String.valueOf(message));
@@ -328,6 +375,13 @@ final class LogAdapter {
         public void error(Object message, Throwable exception) {
             if (message instanceof String || this.logger.isErrorEnabled()) {
                 this.logger.error(String.valueOf(message), exception);
+            }
+        }
+
+        @Override
+        public void error(String format, Object... args) {
+            if (this.logger.isErrorEnabled()) {
+                this.logger.error(format, args);
             }
         }
 
@@ -346,6 +400,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void warn(String format, Object... args) {
+            if (this.logger.isWarnEnabled()) {
+                this.logger.warn(format, args);
+            }
+        }
+
+        @Override
         public void info(Object message) {
             if (message instanceof String || this.logger.isInfoEnabled()) {
                 this.logger.info(String.valueOf(message));
@@ -356,6 +417,13 @@ final class LogAdapter {
         public void info(Object message, Throwable exception) {
             if (message instanceof String || this.logger.isInfoEnabled()) {
                 this.logger.info(String.valueOf(message), exception);
+            }
+        }
+
+        @Override
+        public void info(String format, Object... args) {
+            if (this.logger.isInfoEnabled()) {
+                this.logger.info(format, args);
             }
         }
 
@@ -374,6 +442,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void debug(String format, Object... args) {
+            if (this.logger.isDebugEnabled()) {
+                this.logger.debug(format, args);
+            }
+        }
+
+        @Override
         public void trace(Object message) {
             if (message instanceof String || this.logger.isTraceEnabled()) {
                 this.logger.trace(String.valueOf(message));
@@ -387,13 +462,20 @@ final class LogAdapter {
             }
         }
 
+        @Override
+        public void trace(String format, Object... args) {
+            if (this.logger.isTraceEnabled()) {
+                this.logger.trace(format, args);
+            }
+        }
+
+        @Serial
         protected Object readResolve() {
             return Slf4jAdapter.createLog(this.name);
         }
     }
 
 
-    @SuppressWarnings("serial")
     private static class Slf4jLocationAwareLog extends Slf4jLog<LocationAwareLogger> implements Serializable {
 
         private static final String FQCN = Slf4jLocationAwareLog.class.getName();
@@ -413,6 +495,11 @@ final class LogAdapter {
         }
 
         @Override
+        public void fatal(String format, Object... args) {
+            error(format, args);
+        }
+
+        @Override
         public void error(Object message) {
             if (message instanceof String || this.logger.isErrorEnabled()) {
                 this.logger.log(null, FQCN, LocationAwareLogger.ERROR_INT, String.valueOf(message), null, null);
@@ -423,6 +510,13 @@ final class LogAdapter {
         public void error(Object message, Throwable exception) {
             if (message instanceof String || this.logger.isErrorEnabled()) {
                 this.logger.log(null, FQCN, LocationAwareLogger.ERROR_INT, String.valueOf(message), null, exception);
+            }
+        }
+
+        @Override
+        public void error(String format, Object... args) {
+            if (isErrorEnabled()) {
+                this.logger.log(null, FQCN, LocationAwareLogger.ERROR_INT, format, args, null);
             }
         }
 
@@ -441,6 +535,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void warn(String format, Object... args) {
+            if (isWarnEnabled()) {
+                this.logger.log(null, FQCN, LocationAwareLogger.WARN_INT, format, args, null);
+            }
+        }
+
+        @Override
         public void info(Object message) {
             if (message instanceof String || this.logger.isInfoEnabled()) {
                 this.logger.log(null, FQCN, LocationAwareLogger.INFO_INT, String.valueOf(message), null, null);
@@ -451,6 +552,13 @@ final class LogAdapter {
         public void info(Object message, Throwable exception) {
             if (message instanceof String || this.logger.isInfoEnabled()) {
                 this.logger.log(null, FQCN, LocationAwareLogger.INFO_INT, String.valueOf(message), null, exception);
+            }
+        }
+
+        @Override
+        public void info(String format, Object... args) {
+            if (isInfoEnabled()) {
+                this.logger.log(null, FQCN, LocationAwareLogger.INFO_INT, format, args, null);
             }
         }
 
@@ -469,6 +577,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void debug(String format, Object... args) {
+            if (isDebugEnabled()) {
+                this.logger.log(null, FQCN, LocationAwareLogger.DEBUG_INT, format, args, null);
+            }
+        }
+
+        @Override
         public void trace(Object message) {
             if (message instanceof String || this.logger.isTraceEnabled()) {
                 this.logger.log(null, FQCN, LocationAwareLogger.TRACE_INT, String.valueOf(message), null, null);
@@ -483,13 +598,20 @@ final class LogAdapter {
         }
 
         @Override
+        public void trace(String format, Object... args) {
+            if (isTraceEnabled()) {
+                this.logger.log(null, FQCN, LocationAwareLogger.TRACE_INT, format, args, null);
+            }
+        }
+
+        @Serial
+        @Override
         protected Object readResolve() {
             return Slf4jAdapter.createLocationAwareLog(this.name);
         }
     }
 
 
-    @SuppressWarnings("serial")
     private static class JavaUtilLog implements Log, Serializable {
 
         private final String name;
@@ -499,6 +621,21 @@ final class LogAdapter {
         public JavaUtilLog(String name) {
             this.name = name;
             this.logger = java.util.logging.Logger.getLogger(name);
+        }
+
+        private static String convertPlaceholders(String template) {
+            StringBuilder sb = new StringBuilder();
+            int index = 0;
+            for (int i = 0; i < template.length(); ) {
+                int next = template.indexOf("{}", i);
+                if (next == -1) {
+                    sb.append(template.substring(i));
+                    break;
+                }
+                sb.append(template, i, next).append('{').append(index++).append('}');
+                i = next + 2;
+            }
+            return sb.toString();
         }
 
         @Override
@@ -542,8 +679,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void fatal(String format, Object... args) {
+            error(format, args);
+        }
+
+        @Override
         public void error(Object message) {
-            log(java.util.logging.Level.SEVERE, message, null);
+            log(java.util.logging.Level.SEVERE, message, (Throwable) null);
         }
 
         @Override
@@ -552,8 +694,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void error(String format, Object... args) {
+            log(java.util.logging.Level.SEVERE, format, args);
+        }
+
+        @Override
         public void warn(Object message) {
-            log(java.util.logging.Level.WARNING, message, null);
+            log(java.util.logging.Level.WARNING, message, (Throwable) null);
         }
 
         @Override
@@ -562,8 +709,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void warn(String format, Object... args) {
+            log(java.util.logging.Level.WARNING, format, args);
+        }
+
+        @Override
         public void info(Object message) {
-            log(java.util.logging.Level.INFO, message, null);
+            log(java.util.logging.Level.INFO, message, (Throwable) null);
         }
 
         @Override
@@ -572,8 +724,13 @@ final class LogAdapter {
         }
 
         @Override
+        public void info(String format, Object... args) {
+            log(java.util.logging.Level.INFO, format, args);
+        }
+
+        @Override
         public void debug(Object message) {
-            log(java.util.logging.Level.FINE, message, null);
+            log(java.util.logging.Level.FINE, message, (Throwable) null);
         }
 
         @Override
@@ -582,13 +739,23 @@ final class LogAdapter {
         }
 
         @Override
+        public void debug(String format, Object... args) {
+            log(java.util.logging.Level.FINE, format, args);
+        }
+
+        @Override
         public void trace(Object message) {
-            log(java.util.logging.Level.FINEST, message, null);
+            log(java.util.logging.Level.FINEST, message, (Throwable) null);
         }
 
         @Override
         public void trace(Object message, Throwable exception) {
             log(java.util.logging.Level.FINEST, message, exception);
+        }
+
+        @Override
+        public void trace(String format, Object... args) {
+            log(java.util.logging.Level.FINEST, format, args);
         }
 
         private void log(java.util.logging.Level level, Object message, Throwable exception) {
@@ -607,13 +774,31 @@ final class LogAdapter {
             }
         }
 
+        private void log(java.util.logging.Level level, Object message, Object... params) {
+            if (this.logger.isLoggable(level)) {
+                LogRecord rec;
+                if (message instanceof LogRecord logRecord) {
+                    rec = logRecord;
+                } else {
+                    String msg = String.valueOf(message);
+                    msg = convertPlaceholders(msg);
+                    rec = new LocationResolvingLogRecord(level, msg);
+                    rec.setLoggerName(this.name);
+                    rec.setResourceBundleName(this.logger.getResourceBundleName());
+                    rec.setResourceBundle(this.logger.getResourceBundle());
+                    rec.setParameters(params);
+                }
+                logger.log(rec);
+            }
+        }
+
+        @Serial
         protected Object readResolve() {
             return new JavaUtilLog(this.name);
         }
     }
 
 
-    @SuppressWarnings("serial")
     private static class LocationResolvingLogRecord extends LogRecord {
 
         private static final String FQCN = JavaUtilLog.class.getName();
@@ -671,6 +856,7 @@ final class LogAdapter {
             setSourceMethodName(sourceMethodName);
         }
 
+        @Serial
         protected Object writeReplace() {
             LogRecord serialized = new LogRecord(getLevel(), getMessage());
             serialized.setLoggerName(getLoggerName());
@@ -686,5 +872,4 @@ final class LogAdapter {
             return serialized;
         }
     }
-
 }

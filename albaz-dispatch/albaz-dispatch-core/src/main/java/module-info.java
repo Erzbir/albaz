@@ -6,8 +6,8 @@
  * @author Erzbir
  * @since 1.0.0
  */
-module albaz.dispatch.core {
-    requires transitive albaz.dispatch.api;
+module com.erzbir.albaz.dispatch.core {
+    requires transitive com.erzbir.albaz.dispatch.api;
     requires transitive albaz.common;
-    requires albaz.jcl;
+    requires com.erzbir.albaz.jcl;
 }

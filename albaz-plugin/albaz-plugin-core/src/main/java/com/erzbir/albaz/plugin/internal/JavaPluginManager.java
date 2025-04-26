@@ -3,18 +3,24 @@ package com.erzbir.albaz.plugin.internal;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.*;
+import com.erzbir.albaz.plugin.exception.PluginAlreadyLoadedException;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
-import com.erzbir.albaz.plugin.exception.PluginLoadException;
+import com.erzbir.albaz.plugin.exception.PluginNotFoundException;
 import com.erzbir.albaz.plugin.internal.loader.ClassPluginLoader;
-import com.erzbir.albaz.plugin.internal.loader.FatJarPluginLoader;
+import com.erzbir.albaz.plugin.internal.loader.PluginDescFinder;
+import com.erzbir.albaz.plugin.internal.loader.PluginLoader;
 import com.erzbir.albaz.plugin.internal.loader.SpiPluginLoader;
+import com.erzbir.albaz.plugin.internal.util.FileTypeDetector;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -22,7 +28,7 @@ import java.util.stream.Collectors;
  * </p>
  *
  * <p>
- * 使用插件 id {@link PluginDescription} 来区分每个插件, 如果加载相同 id 的插件, 那么前一个会被卸载进而加载新的插件
+ * 使用插件 id {@link PluginDescription} 来区分每个插件
  * </p>
  *
  * @author Erzbir
@@ -32,12 +38,21 @@ import java.util.stream.Collectors;
  * @since 1.0.0
  */
 public class JavaPluginManager implements PluginManager {
-    private final static String PLUGIN_DIR = "plugins";
-    private final Log log = LogFactory.getLog(JavaPluginManager.class);
-    private final Map<String, PluginHandle> plugins = new ConcurrentHashMap<>();
+    public final static String PLUGINS_DIR_PROPERTY_NAME = "albaz.pluginsDir";
+    private static final Log log = LogFactory.getLog(JavaPluginManager.class);
+    protected static String PLUGIN_DIR = "plugins";
+
+    static {
+        String pluginsDir = System.getProperty(PLUGINS_DIR_PROPERTY_NAME);
+        if (pluginsDir != null && !pluginsDir.isEmpty()) {
+            PLUGIN_DIR = pluginsDir;
+        }
+    }
+
+    protected final Map<String, PluginWrapper> plugins = new HashMap<>();
+    protected final Map<String, ClassLoader> pluginClassLoaders = new HashMap<>();
 
     public JavaPluginManager() {
-
     }
 
     @Override
@@ -45,85 +60,89 @@ public class JavaPluginManager implements PluginManager {
         loadPlugins(PLUGIN_DIR);
     }
 
-    @Override
-    public void loadPlugins(String pluginDir) {
+    private void loadPlugins(String pluginDir) {
         File[] plugins = new File(pluginDir).listFiles((dir, name) -> name.endsWith(".jar") || name.endsWith(".class"));
         if (plugins == null || plugins.length == 0) {
-            log.warn("No plugins found in " + pluginDir);
+            log.warn("No plugins found in [{}]", pluginDir);
             return;
         }
         for (File plugin : plugins) {
-            loadPlugin(plugin);
+            loadPlugin(plugin.toPath().getFileName());
         }
     }
 
+    public void loadPlugin(Path pluginPath) {
+        if (!pluginPath.isAbsolute()) {
+            pluginPath = Path.of(PLUGIN_DIR).resolve(pluginPath);
+        }
 
-    @Override
-    public void loadPlugin(File file) {
-        PluginLoader pluginLoader;
-        FileTypeDetector.FileType fileType;
-        try {
-            fileType = FileTypeDetector.detect(file);
-        } catch (IOException e) {
-            throw new PluginIllegalException(e);
+        if (Files.notExists(pluginPath)) {
+            throw new IllegalArgumentException(String.format("Specified plugin [%s] does not exist", pluginPath));
         }
-        switch (fileType) {
-            case FileTypeDetector.FileType.JAR -> pluginLoader = new SpiPluginLoader(getClass().getClassLoader());
-            case FileTypeDetector.FileType.CLASS -> pluginLoader = new ClassPluginLoader(getClass().getClassLoader());
-            default -> throw new PluginIllegalException(file.getName() + " is not a valid plugin file");
-        }
-        Plugin plugin;
-        try {
-            plugin = pluginLoader.load(file);
-        } catch (Throwable e) {
-            pluginLoader = new FatJarPluginLoader(getClass().getClassLoader());
-            plugin = pluginLoader.load(file);
-        }
+
+        PluginLoader pluginLoader = createPluginLoader(pluginPath);
+
+        Plugin plugin = pluginLoader.loadPlugin(pluginPath);
         if (plugin == null) {
-            throw new PluginLoadException("Failed to load plugin " + file.getAbsolutePath());
-        }
-        PluginDescription description = plugin.getDescription();
-        if (plugins.containsKey(description.getId())) {
-            log.warn("Plugin " + plugin.getDescription().getId() + " already loaded, try to reload");
-            unloadPlugin(description.getId());
-            loadPlugin(file);
             return;
         }
-        PluginHandle pluginHandle = new PluginHandle(new PluginWrapper(plugin), file.toPath(), pluginLoader, this);
-        plugins.put(description.getId(), pluginHandle);
+
+        if (!isJavaPlugin(plugin)) {
+            log.warn("[{}] is not a Java plugin", pluginPath.getFileName());
+            return;
+        }
+
+        PluginContext pluginContext = new PluginContext(plugin, pluginLoader.getClassLoader(), pluginPath);
+        PluginDescription description = findDescription(pluginContext);
+
+        if (plugins.containsKey(description.id())) {
+            throw new PluginAlreadyLoadedException(String.format("Plugin [%s] already loaded with id [%s]", pluginPath.getFileName(), description.id()));
+        }
+
+        PluginWrapper pluginWrapper = new PluginWrapper(pluginContext, description);
+        registerPlugin(pluginWrapper, pluginLoader.getClassLoader(), pluginPath);
+        log.info("Plugin: [{}] loaded", plugin);
+    }
+
+    private PluginDescription findDescription(PluginContext pluginContext) {
+        return PluginDescFinder.find(pluginContext);
+    }
+
+    private PluginLoader createPluginLoader(Path path) {
+        FileTypeDetector.FileType fileType = FileTypeDetector.detect(path);
+
+        return switch (fileType) {
+            case FileTypeDetector.FileType.ZIP, FileTypeDetector.FileType.JAR -> new SpiPluginLoader(this);
+            case FileTypeDetector.FileType.CLASS -> new ClassPluginLoader(this);
+            default -> throw new PluginIllegalException("Unsupported plugin file type: " + fileType);
+        };
+    }
+
+
+    private void registerPlugin(PluginWrapper plugin, ClassLoader classLoader, Path path) {
+        String id = plugin.description.id();
+        plugins.put(id, plugin);
+        pluginClassLoaders.put(id, classLoader);
         plugin.onLoad();
     }
 
-    @Override
-    public void reloadPlugins() {
-        unloadPlugins();
-        loadPlugins();
-    }
-
-    @Override
-    public void reloadPlugin(String pluginId) {
-        PluginHandle pluginHandle = plugins.get(pluginId);
-        if (pluginHandle == null) {
-            log.warn("Plugin " + pluginId + " not found");
-            return;
-        }
-        File pluginFile = pluginHandle.getFile().toFile();
-        unloadPlugin(pluginId);
-        loadPlugin(pluginFile);
+    private boolean isJavaPlugin(Plugin plugin) {
+        return (plugin instanceof JavaPlugin);
     }
 
     @Override
     public void enablePlugin(String pluginId) {
-        PluginHandle pluginHandle = plugins.get(pluginId);
-        if (pluginHandle == null) {
-            log.warn("Plugin " + pluginId + " not found");
+        PluginWrapper plugin = plugins.get(pluginId);
+        if (plugin == null) {
+            throw new PluginNotFoundException(String.format("Plugin [%s] Not found", pluginId));
+        }
+        if (plugin.isEnable()) {
+            log.warn("Plugin [{}] is already enabled", pluginId);
             return;
         }
-        if (pluginHandle.getPlugin().isEnable()) {
-            log.warn("Plugin " + pluginId + " is already enabled");
-            return;
-        }
-        pluginHandle.getPlugin().enable();
+        plugin.enable();
+        plugin.onEnable();
+        log.info("Plugin: [{}] enabled", pluginId);
     }
 
     @Override
@@ -135,16 +154,17 @@ public class JavaPluginManager implements PluginManager {
 
     @Override
     public void disablePlugin(String pluginId) {
-        PluginHandle pluginHandle = plugins.get(pluginId);
-        if (pluginHandle == null) {
-            log.warn("Plugin " + pluginId + " not found");
+        PluginWrapper plugin = plugins.get(pluginId);
+        if (plugin == null) {
+            throw new PluginNotFoundException(String.format("Plugin [%s] Not found", pluginId));
+        }
+        if (!plugin.isEnable()) {
+            log.warn("Plugin [{}] is already disabled", pluginId);
             return;
         }
-        if (!pluginHandle.getPlugin().isEnable()) {
-            log.warn("Plugin " + pluginId + " is already disabled");
-            return;
-        }
-        pluginHandle.getPlugin().disable();
+        plugin.disable();
+        plugin.onDisable();
+        log.info("Plugin: [{}] disabled", pluginId);
     }
 
     @Override
@@ -156,45 +176,50 @@ public class JavaPluginManager implements PluginManager {
 
     @Override
     public void unloadPlugins() {
-        for (String pluginId : plugins.keySet()) {
+        List<String> keys = new ArrayList<>(plugins.keySet());
+        for (String pluginId : keys) {
             unloadPlugin(pluginId);
         }
     }
 
     @Override
     public void unloadPlugin(String pluginId) {
-        PluginHandle pluginHandle = plugins.get(pluginId);
-        if (pluginHandle == null) {
-            log.warn("Plugin " + pluginId + " not found");
-            return;
+        PluginWrapper plugin = plugins.remove(pluginId);
+        if (plugin == null) {
+            throw new PluginNotFoundException(String.format("Plugin [%s] Not found", pluginId));
         }
-        pluginHandle.getPlugin().onUnLoad();
-        pluginHandle.destroy();
-        plugins.remove(pluginId);
-    }
+        plugin.disable();
+        plugin.onUnLoad();
+        destroyPlugin(plugin);
+        log.info("Plugin: [{}] unloaded", pluginId);
+        plugin = null;
+        System.gc();
 
-    @Override
-    public int size() {
-        return plugins.size();
     }
 
     @Override
     public Plugin getPlugin(String pluginId) {
-        return plugins.get(pluginId).getPlugin();
+        PluginWrapper plugin = plugins.get(pluginId);
+        if (plugin == null) {
+            throw new PluginNotFoundException(String.format("Plugin [%s] Not found", pluginId));
+        }
+        return plugin;
     }
 
     @Override
     public List<Plugin> getPlugins() {
-        return plugins.values().stream().map(PluginHandle::getPlugin).collect(Collectors.toList());
+        return new ArrayList<>(plugins.values());
     }
 
-    @Override
-    public PluginHandle getPluginHandle(String pluginId) {
-        return plugins.get(pluginId);
-    }
-
-    @Override
-    public List<PluginHandle> getPluginHandles() {
-        return plugins.values().stream().toList();
+    private void destroyPlugin(PluginWrapper plugin) {
+        try {
+            if (pluginClassLoaders.get(plugin.description.id()) instanceof Closeable closeable) {
+                closeable.close();
+            }
+        } catch (IOException e) {
+            log.error("Failed to close ClassLoader", e);
+        }
+        pluginClassLoaders.remove(plugin.description.id());
+        log.trace("ClassLoader of Plugin: [{}] is removed", plugin.description.id());
     }
 }

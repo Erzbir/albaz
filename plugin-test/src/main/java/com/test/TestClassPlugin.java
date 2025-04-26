@@ -7,7 +7,7 @@ public class TestClassPlugin extends JavaPlugin {
     public static TestClassPlugin INSTANCE = new TestClassPlugin();
 
     public TestClassPlugin() {
-        super(new PluginDescription.Builder("test.class", "0.0.1")
+        super(new PluginDescription.Builder("com.test.TestClassPlugin", "0.0.1")
                 .author("Erzbir")
                 .desc("this is a class plugin test")
                 .build());
@@ -15,21 +15,22 @@ public class TestClassPlugin extends JavaPlugin {
 
     @Override
     public void onEnable() {
-        System.out.println("Plugin enabled");
+        System.out.printf("Plugin %s enabled\n", description.id());
     }
 
     @Override
     public void onDisable() {
-        System.out.println("Plugin disabled");
+        System.out.printf("Plugin %s disabled\n", description.id());
+
     }
 
     @Override
     public void onLoad() {
-        System.out.println("Plugin loaded");
+        System.out.printf("Plugin %s loaded\n", description.id());
     }
 
     @Override
     public void onUnLoad() {
-        System.out.println("Plugin unloaded");
+        System.out.printf("Plugin %s unloaded\n", description.id());
     }
 }

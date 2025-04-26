@@ -12,7 +12,8 @@ import java.util.concurrent.Executors;
 
 /**
  * <p>
- * {@link EventDispatcher} 被这个类包装了之后就会变成一个
+ * {@link EventDispatcher} 被这个类包装了之后就会变成一个 {@link AsyncEventDispatcher}.
+ * 即使原本同步的 {@link #dispatch(Event)} 也会转为异步, 但只有 {@link #dispatchAsync(Event)} 才返回 {@link CompletableFuture} 对象
  * </p>
  *
  * @author Erzbir
@@ -37,13 +38,9 @@ class AsyncDispatcherWrapper implements AsyncEventDispatcher {
         dispatchAsync(event);
     }
 
-    @Override
-    public <E extends Event> void dispatch(E event, EventChannel<E> channel) {
-        dispatchAsync(event, channel);
-    }
 
     @Override
-    public <E extends Event> void addInterceptor(Interceptor<E> interceptor) {
+    public void addInterceptor(Interceptor<? extends Event> interceptor) {
         delegate.addInterceptor(interceptor);
     }
 
@@ -74,12 +71,10 @@ class AsyncDispatcherWrapper implements AsyncEventDispatcher {
 
     @Override
     public CompletableFuture<Void> dispatchAsync(Event event) {
+        if (delegate instanceof AsyncEventDispatcher async) {
+            async.dispatchAsync(event);
+        }
         return CompletableFuture.runAsync(() -> delegate.dispatch(event), dispatchThreadPool);
-    }
-
-    @Override
-    public <E extends Event> CompletableFuture<Void> dispatchAsync(E event, EventChannel<E> channel) {
-        return CompletableFuture.runAsync(() -> delegate.dispatch(event, channel), dispatchThreadPool);
     }
 
     @Override

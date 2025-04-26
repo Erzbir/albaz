@@ -1,6 +1,5 @@
 package com.erzbir.albaz.dispatch;
 
-import com.erzbir.albaz.dispatch.channel.EventChannel;
 import com.erzbir.albaz.dispatch.event.Event;
 
 import java.util.concurrent.CompletableFuture;
@@ -21,8 +20,6 @@ public interface AsyncEventDispatcher extends EventDispatcher {
     }
 
     CompletableFuture<Void> dispatchAsync(Event event);
-
-    <E extends Event> CompletableFuture<Void> dispatchAsync(E event, EventChannel<E> channel);
 
     /**
      * 阻塞当前调用线程

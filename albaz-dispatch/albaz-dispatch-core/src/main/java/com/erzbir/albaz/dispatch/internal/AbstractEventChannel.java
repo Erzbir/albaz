@@ -14,17 +14,12 @@ import java.util.function.Consumer;
  * @since 1.0.0
  */
 public abstract class AbstractEventChannel<E extends Event> implements EventChannel<E> {
-    protected Class<E> baseEventClass;
-    protected AtomicBoolean activated = new AtomicBoolean(true);
+    protected final Class<E> baseEventClass;
+    protected final AtomicBoolean activated = new AtomicBoolean(true);
 
     public AbstractEventChannel(Class<E> baseEventClass) {
         this.baseEventClass = baseEventClass;
     }
-
-    public Class<E> getBaseEventClass() {
-        return baseEventClass;
-    }
-
 
     public abstract <T extends E> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle);
 

@@ -38,8 +38,7 @@ subprojects {
     dependencies {
         testImplementation(platform("org.junit:junit-bom:5.10.3"))
         testImplementation("org.junit.jupiter:junit-jupiter")
-        testCompileOnly("org.slf4j:slf4j-api:2.0.16")
-        testRuntimeOnly("org.apache.logging.log4j:log4j-slf4j2-impl:2.24.1")
+        testRuntimeOnly("org.apache.logging.log4j:log4j-core:2.24.3")
 
     }
 }

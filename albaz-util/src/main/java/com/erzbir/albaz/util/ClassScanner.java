@@ -131,7 +131,7 @@ public class ClassScanner {
      *
      * @param subAnnotation     子注解
      * @param supAnnotationType 要获取的注解的字节码
-     * @return subAnnotation上的字节码为annotationType的注解
+     * @return subAnnotation 注解上字节码为 annotationType 的注解
      */
     private static Annotation getAnnotationFromAnnotation(Annotation subAnnotation, Class<? extends Annotation> supAnnotationType) {
         if (subAnnotation == null || supAnnotationType == null) {
@@ -148,6 +148,30 @@ public class ClassScanner {
             return getAnnotationFromAnnotation(annotation1, supAnnotationType);
         }
         return null;
+    }
+
+    public static Set<Class<?>> scanWithAnnotation(String basePackage, Class<? extends Annotation> type) {
+        return new ClassScanner(basePackage).scanWithAnnotation(type, true);
+    }
+
+    public static Set<Class<?>> scanWithSupperClass(String basePackage, Class<?> supperClass) {
+        return new ClassScanner(basePackage).scanWithSupperClass(supperClass, true);
+    }
+
+    private static void aggregationAnnotation(Class<?> c, Set<Annotation> annotationList) {
+        Annotation[] annotations = c.getAnnotations();
+        Annotation[] declaredAnnotations = c.getDeclaredAnnotations();
+        if (annotations.length == 0 || declaredAnnotations.length == 0 || "java.lang.annotation".equals(c.getPackage().getName())) {
+            return;
+        }
+        for (Annotation annotation : annotations) {
+            annotationList.add(annotation);
+            aggregationAnnotation(annotation.annotationType(), annotationList);
+        }
+        for (Annotation annotation : declaredAnnotations) {
+            annotationList.add(annotation);
+            aggregationAnnotation(annotation.annotationType(), annotationList);
+        }
     }
 
     public String getBasePackage() {
@@ -231,7 +255,6 @@ public class ClassScanner {
     }
 
     public Set<Class<?>> scanWithAnnotation(Class<? extends Annotation> type) {
-        // 如果为空就先执行扫瞄再用Stream流过滤, 不为空就注解过滤
         if (classes.isEmpty()) {
             return scanWithAnnotation(type, true);
         }
@@ -249,13 +272,9 @@ public class ClassScanner {
             if (t.getAnnotation(type) != null) {
                 return true;
             }
-            Annotation[] annotations = t.getAnnotations();  // 取出 t 上的所有注解, 向上一层搜索
-            for (Annotation annotation : annotations) {
-                if (annotation.annotationType().getAnnotation(type) != null) {
-                    return true;
-                }
-            }
-            return false;
+            Set<Annotation> annotations = new HashSet<>();
+            aggregationAnnotation(t, annotations);
+            return annotations.stream().anyMatch(annotation -> annotation.annotationType() == type);
         }).collect(Collectors.toSet());
     }
 

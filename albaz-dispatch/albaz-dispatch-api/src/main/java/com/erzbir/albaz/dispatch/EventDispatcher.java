@@ -12,7 +12,7 @@ import com.erzbir.albaz.dispatch.event.Event;
  * <p>分发一个 {@link Event}:
  * <ul>
  *     <li>由调度器自己选择 {@link EventChannel}: {@link #dispatch(Event)}</li>
- *     <li>指定一个 {@link EventChannel}: {@link #dispatch(Event, EventChannel)}</li>
+ *     <li>指定一个 {@link EventChannel}: {@link #dispatch(Event)}</li>
  * </ul>
  * </p>
  *
@@ -29,9 +29,7 @@ import com.erzbir.albaz.dispatch.event.Event;
 public interface EventDispatcher extends Dispatcher {
     void dispatch(Event event);
 
-    <E extends Event> void dispatch(E event, EventChannel<E> channel);
-
-    <E extends Event> void addInterceptor(Interceptor<E> interceptor);
+    void addInterceptor(Interceptor<? extends Event> interceptor);
 
     EventChannel<Event> getEventChannel();
 

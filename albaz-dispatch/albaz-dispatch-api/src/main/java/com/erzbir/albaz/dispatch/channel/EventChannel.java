@@ -2,7 +2,6 @@ package com.erzbir.albaz.dispatch.channel;
 
 import com.erzbir.albaz.common.Closeable;
 import com.erzbir.albaz.common.Interceptor;
-import com.erzbir.albaz.dispatch.common.ListenerContainer;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerHandle;
@@ -23,12 +22,11 @@ import java.util.function.Predicate;
  * </p>
  *
  * @author Erzbir
- * @see ListenerContainer
  * @see Interceptor
  * @since 1.0.0
  */
-public interface EventChannel<E extends Event> extends ListenerContainer, Closeable {
-    Class<E> getBaseEventClass();
+public interface EventChannel<E extends Event> extends Closeable {
+//    Class<E> getBaseEventClass();
 
     /**
      * <p>
@@ -38,6 +36,7 @@ public interface EventChannel<E extends Event> extends ListenerContainer, Closea
      * @param eventType 要监听的事件类型
      * @param listener  监听器
      * @return 监听器句柄
+     * @throws IllegalArgumentException 当 eventType 或 listener 为 null 时
      * @see ListenerHandle
      * @see Listener
      */
@@ -92,7 +91,7 @@ public interface EventChannel<E extends Event> extends ListenerContainer, Closea
      * @return 过滤后的事件通道
      * @see Predicate
      */
-    EventChannel<E> filter(Predicate<? extends E> predicate);
+    EventChannel<E> filter(Predicate<? super E> predicate);
 
     /**
      * <p>

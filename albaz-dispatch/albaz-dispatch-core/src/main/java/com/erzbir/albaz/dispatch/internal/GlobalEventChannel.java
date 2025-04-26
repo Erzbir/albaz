@@ -18,13 +18,12 @@ import java.util.function.Predicate;
  * @author Erzbir
  * @since 1.0.0
  */
-public final class GlobalEventChannel extends AbstractEventChannel<Event> {
-    public static GlobalEventChannel INSTANCE = new GlobalEventChannel(Event.class);
-    private final AbstractEventChannel<Event> delegate;
+public final class GlobalEventChannel implements EventChannel<Event> {
+    public static GlobalEventChannel INSTANCE = new GlobalEventChannel();
+    private final EventChannelDispatcher delegate = EventChannelDispatcher.INSTANCE;
 
-    private GlobalEventChannel(Class<Event> baseEventClass) {
-        super(baseEventClass);
-        delegate = EventChannelDispatcher.INSTANCE;
+    void broadcast(Event event) {
+        delegate.broadcast(event);
     }
 
     @Override
@@ -48,7 +47,7 @@ public final class GlobalEventChannel extends AbstractEventChannel<Event> {
     }
 
     @Override
-    public EventChannel<Event> filter(Predicate<? extends Event> predicate) {
+    public EventChannel<Event> filter(Predicate<? super Event> predicate) {
         return delegate.filter(predicate);
     }
 
@@ -58,8 +57,18 @@ public final class GlobalEventChannel extends AbstractEventChannel<Event> {
     }
 
     @Override
-    public Iterable<Listener<Event>> getListeners() {
-        return delegate.getListeners();
+    public boolean isClosed() {
+        return delegate.isClosed();
+    }
+
+    @Override
+    public void close() {
+        delegate.close();
+    }
+
+    @Override
+    public void open() {
+        delegate.open();
     }
 }
 

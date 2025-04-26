@@ -9,12 +9,11 @@ import com.erzbir.albaz.dispatch.EventDispatcher;
  * @author Erzbir
  * @since 1.0.0
  */
-module albaz.dispatch.api {
+module com.erzbir.albaz.dispatch.api {
     uses EventDispatcher;
-    requires albaz.common;
+    requires transitive albaz.common;
     exports com.erzbir.albaz.dispatch;
     exports com.erzbir.albaz.dispatch.event;
-    exports com.erzbir.albaz.dispatch.common;
     exports com.erzbir.albaz.dispatch.listener;
     exports com.erzbir.albaz.dispatch.channel;
     exports com.erzbir.albaz.dispatch.spi;

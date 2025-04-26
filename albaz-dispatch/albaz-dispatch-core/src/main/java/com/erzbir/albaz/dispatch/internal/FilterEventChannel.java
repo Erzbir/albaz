@@ -13,24 +13,26 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 /**
+ * <p>过滤通道, 是一个子通道. 关闭子通道不会影响父通道, 父通道关闭同样也不会关闭子通道, 但打开子通道会打开父通道</p>
+ * <p>过滤是惰性的, 发生在创建监听器时, 在没有执行 {@link Listener#onEvent(Event)} 之前过滤都不会发生</p>
+ * <p>因为过滤是惰性的, 所以被过滤的 {@link Event} 会传递到监听器中, 但是监听器不会处理这个事件</p>
+ *
  * @author Erzbir
  * @since 1.0.0
  */
 final class FilterEventChannel<E extends Event> extends AbstractEventChannel<E> {
     private final AbstractEventChannel<E> delegate;
-    private final Predicate<Event> filter;
+    private final Predicate<E> filter;
     private final Log log = LogFactory.getLog(FilterEventChannel.class);
 
-    FilterEventChannel(AbstractEventChannel<E> delegate, Predicate<Event> filter) {
-        super(delegate.getBaseEventClass());
+    FilterEventChannel(AbstractEventChannel<E> delegate, Predicate<E> filter) {
+        super(delegate.baseEventClass);
         this.delegate = delegate;
         this.filter = filter;
     }
 
-
     FilterEventChannel(AbstractEventChannel<E> delegate, Class<E> eventType) {
         this(delegate, eventType::isInstance);
-        this.baseEventClass = eventType;
     }
 
     @Override
@@ -59,7 +61,7 @@ final class FilterEventChannel<E extends Event> extends AbstractEventChannel<E> 
      */
     @SuppressWarnings({"rawtypes", "unchecked"})
     @Override
-    public EventChannel<E> filter(Predicate<? extends E> predicate) {
+    public EventChannel<E> filter(Predicate<? super E> predicate) {
         return new FilterEventChannel(this, predicate);
     }
 
@@ -69,21 +71,16 @@ final class FilterEventChannel<E extends Event> extends AbstractEventChannel<E> 
         return new FilterEventChannel(this, eventType);
     }
 
-    @Override
-    public Iterable<Listener<Event>> getListeners() {
-        return delegate.getListeners();
-    }
-
     private boolean shouldFilter(E event) {
-        return isClosed() || !getBaseEventClass().isInstance(event) || !filter.test(event);
+        return isClosed() || !baseEventClass.isAssignableFrom(event.getClass()) || !filter.test(event);
     }
 
     private <T extends E> Listener<T> intercept(Listener<T> listener) {
         return (ev) -> {
-            if (shouldFilter(ev)) {
+            if (!shouldFilter(ev)) {
                 return listener.onEvent(ev);
             } else {
-                log.debug("Filtered event " + ev);
+                log.debug("Filtered event: {} in {}", ev, this.getClass().getName());
                 return ListenerStatus.CONTINUE;
             }
         };
@@ -91,23 +88,28 @@ final class FilterEventChannel<E extends Event> extends AbstractEventChannel<E> 
 
     private <T extends E> Consumer<T> intercept(Consumer<T> handler) {
         return (ev) -> {
-            if (shouldFilter(ev)) {
+            if (!shouldFilter(ev)) {
                 handler.accept(ev);
             } else {
-                log.debug("Filtered event " + ev);
+                log.debug("Filtered {} in {}", ev, this.getClass().getName());
             }
         };
     }
 
     private <T extends E> Function<T, ListenerStatus> intercept(Function<T, ListenerStatus> handler) {
         return (ev) -> {
-            if (shouldFilter(ev)) {
+            if (!shouldFilter(ev)) {
                 return handler.apply(ev);
             } else {
-                log.debug("Filtered event " + ev);
+                log.debug("Filtered event: {} in {}", ev, this.getClass().getName());
                 return ListenerStatus.CONTINUE;
             }
         };
     }
 
+    @Override
+    public void open() {
+        super.open();
+        delegate.open();
+    }
 }

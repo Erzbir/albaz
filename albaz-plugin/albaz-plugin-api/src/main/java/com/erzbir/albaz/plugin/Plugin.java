@@ -12,17 +12,4 @@ public interface Plugin {
     void onLoad();
 
     void onUnLoad();
-
-    void enable();
-
-    void disable();
-
-    boolean isEnable();
-
-    PluginDescription getDescription();
-
-    PluginContext getPluginContext();
-
-    void setPluginContext(PluginContext pluginContext);
-
 }

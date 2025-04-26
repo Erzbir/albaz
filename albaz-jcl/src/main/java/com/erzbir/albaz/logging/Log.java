@@ -1,20 +1,3 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      https://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package com.erzbir.albaz.logging;
 
 /**
@@ -55,69 +38,22 @@ package com.erzbir.albaz.logging;
  * external to the Logging APIs, through whatever mechanism is supported by
  * that system.
  *
- * @author Juergen Hoeller (for the {@code spring-jcl} variant)
- * @since 5.0
+ * @author Juergen Hoeller
+ * @author Erzbir
+ * @since 1.0
  */
 public interface Log {
 
-    /**
-     * Is fatal logging currently enabled?
-     * <p>Call this method to prevent having to perform expensive operations
-     * (for example, <code>String</code> concatenation)
-     * when the log level is more than fatal.
-     *
-     * @return true if fatal is enabled in the underlying logger.
-     */
     boolean isFatalEnabled();
 
-    /**
-     * Is error logging currently enabled?
-     * <p>Call this method to prevent having to perform expensive operations
-     * (for example, <code>String</code> concatenation)
-     * when the log level is more than error.
-     *
-     * @return true if error is enabled in the underlying logger.
-     */
     boolean isErrorEnabled();
 
-    /**
-     * Is warn logging currently enabled?
-     * <p>Call this method to prevent having to perform expensive operations
-     * (for example, <code>String</code> concatenation)
-     * when the log level is more than warn.
-     *
-     * @return true if warn is enabled in the underlying logger.
-     */
     boolean isWarnEnabled();
 
-    /**
-     * Is info logging currently enabled?
-     * <p>Call this method to prevent having to perform expensive operations
-     * (for example, <code>String</code> concatenation)
-     * when the log level is more than info.
-     *
-     * @return true if info is enabled in the underlying logger.
-     */
     boolean isInfoEnabled();
 
-    /**
-     * Is debug logging currently enabled?
-     * <p>Call this method to prevent having to perform expensive operations
-     * (for example, <code>String</code> concatenation)
-     * when the log level is more than debug.
-     *
-     * @return true if debug is enabled in the underlying logger.
-     */
     boolean isDebugEnabled();
 
-    /**
-     * Is trace logging currently enabled?
-     * <p>Call this method to prevent having to perform expensive operations
-     * (for example, <code>String</code> concatenation)
-     * when the log level is more than trace.
-     *
-     * @return true if trace is enabled in the underlying logger.
-     */
     boolean isTraceEnabled();
 
 
@@ -137,6 +73,14 @@ public interface Log {
     void fatal(Object message, Throwable t);
 
     /**
+     * Logs a message with fatal log level with parameter substitution.
+     *
+     * @param format log this message with {} placeholders
+     * @param args   parameters to substitute
+     */
+    void fatal(String format, Object... args);
+
+    /**
      * Logs a message with error log level.
      *
      * @param message log this message
@@ -150,6 +94,15 @@ public interface Log {
      * @param t       log this cause
      */
     void error(Object message, Throwable t);
+
+
+    /**
+     * Logs a message with error log level with parameter substitution.
+     *
+     * @param format log this message with {} placeholders
+     * @param args   parameters to substitute
+     */
+    void error(String format, Object... args);
 
     /**
      * Logs a message with warn log level.
@@ -167,6 +120,14 @@ public interface Log {
     void warn(Object message, Throwable t);
 
     /**
+     * Logs a message with warn log level with parameter substitution.
+     *
+     * @param format log this message with {} placeholders
+     * @param args   parameters to substitute
+     */
+    void warn(String format, Object... args);
+
+    /**
      * Logs a message with info log level.
      *
      * @param message log this message
@@ -180,6 +141,14 @@ public interface Log {
      * @param t       log this cause
      */
     void info(Object message, Throwable t);
+
+    /**
+     * Logs a message with info log level with parameter substitution.
+     *
+     * @param format log this message with {} placeholders
+     * @param args   parameters to substitute
+     */
+    void info(String format, Object... args);
 
     /**
      * Logs a message with debug log level.
@@ -197,18 +166,27 @@ public interface Log {
     void debug(Object message, Throwable t);
 
     /**
+     * Logs a message with debug log level with parameter substitution.
+     *
+     * @param format log this message with {} placeholders
+     * @param args   parameters to substitute
+     */
+    void debug(String format, Object... args);
+
+    /**
      * Logs a message with trace log level.
      *
      * @param message log this message
      */
     void trace(Object message);
 
-    /**
-     * Logs an error with trace log level.
-     *
-     * @param message log this message
-     * @param t       log this cause
-     */
-    void trace(Object message, Throwable t);
+    void trace(Object message, Throwable exception);
 
+    /**
+     * Logs a message with trace log level with parameter substitution.
+     *
+     * @param format log this message with {} placeholders
+     * @param args   parameters to substitute
+     */
+    void trace(String format, Object... args);
 }

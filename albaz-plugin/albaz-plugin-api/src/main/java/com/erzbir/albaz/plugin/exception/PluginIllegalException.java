@@ -1,14 +1,10 @@
 package com.erzbir.albaz.plugin.exception;
 
 /**
- * <p>
- * 加载一个非法插件时抛出
- * </p>
- *
  * @author Erzbir
  * @since 1.0.0
  */
-public class PluginIllegalException extends RuntimeException {
+public class PluginIllegalException extends PluginRuntimeException {
     public PluginIllegalException() {
         super();
     }

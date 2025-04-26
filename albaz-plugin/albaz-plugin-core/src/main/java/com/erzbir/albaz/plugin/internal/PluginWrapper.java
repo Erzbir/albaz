@@ -1,67 +1,103 @@
 package com.erzbir.albaz.plugin.internal;
 
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.Plugin;
 import com.erzbir.albaz.plugin.PluginContext;
 import com.erzbir.albaz.plugin.PluginDescription;
+import com.erzbir.albaz.plugin.exception.PluginExceptionHandler;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
 public class PluginWrapper implements Plugin {
+    public final PluginDescription description;
+    public final PluginContext pluginContext;
     private final Plugin delegate;
+    private final AtomicBoolean enable = new AtomicBoolean(false);
+    private final PluginExceptionHandler exceptionHandler;
+    private final ExecutorService sandbox = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Sandbox-", 0).factory());
 
-    public PluginWrapper(Plugin plugin) {
-        this.delegate = plugin;
+
+    public PluginWrapper(PluginContext pluginContext, PluginDescription description) {
+        this(pluginContext, description, DefaultPluginExceptionHandler.INSTANCE);
+    }
+
+    public PluginWrapper(PluginContext pluginContext, PluginDescription description, PluginExceptionHandler exceptionHandler) {
+        this.delegate = pluginContext.plugin();
+        this.pluginContext = pluginContext;
+        this.description = description;
+        this.exceptionHandler = exceptionHandler;
     }
 
     @Override
     public void onEnable() {
-        delegate.onEnable();
+        sandbox.execute(() -> {
+            try {
+                delegate.onEnable();
+            } catch (Throwable throwable) {
+                exceptionHandler.handle(throwable, pluginContext);
+            }
+        });
     }
 
     @Override
     public void onDisable() {
-        delegate.onDisable();
+        sandbox.execute(() -> {
+            try {
+                delegate.onDisable();
+            } catch (Throwable throwable) {
+                exceptionHandler.handle(throwable, pluginContext);
+            }
+        });
     }
 
     @Override
     public void onLoad() {
-        delegate.onLoad();
+        sandbox.execute(() -> {
+            try {
+                delegate.onLoad();
+            } catch (Throwable throwable) {
+                exceptionHandler.handle(throwable, pluginContext);
+            }
+        });
     }
 
     @Override
     public void onUnLoad() {
-        delegate.onUnLoad();
+        sandbox.execute(() -> {
+            try {
+                delegate.onUnLoad();
+            } catch (Throwable throwable) {
+                exceptionHandler.handle(throwable, pluginContext);
+            }
+        });
     }
 
-    @Override
-    public void enable() {
-        delegate.enable();
-    }
-
-    @Override
-    public void disable() {
-        delegate.disable();
-    }
-
-    @Override
     public boolean isEnable() {
-        return delegate.isEnable();
+        return enable.get();
     }
 
-    @Override
-    public PluginDescription getDescription() {
-        return delegate.getDescription();
+    public void enable() {
+        enable.set(true);
     }
 
-    @Override
-    public PluginContext getPluginContext() {
-        return delegate.getPluginContext();
+    public void disable() {
+        enable.set(false);
     }
 
-    @Override
-    public void setPluginContext(PluginContext pluginContext) {
-        delegate.setPluginContext(pluginContext);
+    private static class DefaultPluginExceptionHandler implements PluginExceptionHandler {
+        public static final PluginExceptionHandler INSTANCE = new DefaultPluginExceptionHandler();
+        private static final Log log = LogFactory.getLog(DefaultPluginExceptionHandler.class);
+
+        @Override
+        public void handle(Throwable throwable, PluginContext context) {
+            log.error("Plugin: [{}] throw a exception: ", context, throwable);
+        }
     }
 }

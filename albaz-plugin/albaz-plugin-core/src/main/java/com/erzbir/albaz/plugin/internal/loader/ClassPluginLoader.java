@@ -1,63 +1,80 @@
 package com.erzbir.albaz.plugin.internal.loader;
 
+import com.erzbir.albaz.logging.Log;
+import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.Plugin;
-import com.erzbir.albaz.plugin.PluginLoader;
+import com.erzbir.albaz.plugin.PluginManager;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
-import com.erzbir.albaz.plugin.exception.PluginLoadException;
-import com.erzbir.albaz.plugin.internal.FileTypeDetector;
+import com.erzbir.albaz.plugin.exception.PluginRuntimeException;
+import com.erzbir.albaz.plugin.internal.util.FileTypeDetector;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.lang.reflect.Field;
+import java.nio.file.Path;
 
 /**
  * <p>
  * 加载 class 文件类型的 plugin
  * </p>
  *
+ * @author Erzbir
  * @see AbstractPluginLoader
  * @see PluginLoader
  * @since 1.0.0
  */
 public class ClassPluginLoader extends AbstractPluginLoader implements PluginLoader {
-    public ClassPluginLoader(ClassLoader parent) {
-        super(parent);
+    private final Log log = LogFactory.getLog(getClass());
+
+    public ClassPluginLoader(ClassLoader parent, PluginManager pluginManager) {
+        super(parent, pluginManager);
+    }
+
+    public ClassPluginLoader(PluginManager pluginManager) {
+        super(pluginManager);
     }
 
     @Override
-    protected Plugin resolve(File file) {
-        FileTypeDetector.FileType detect;
-        try {
-            detect = FileTypeDetector.detect(file);
-        } catch (IOException e) {
-            throw new PluginIllegalException(e);
+    protected boolean isApplicable(Path pluginPath) {
+        if (!FileTypeDetector.isClassFile(pluginPath)) {
+            log.error("The file: [{}] is not a class file", pluginPath.toAbsolutePath());
+            return false;
         }
-        if (!file.getName().endsWith(".class") || !detect.equals(FileTypeDetector.FileType.CLASS)) {
-            throw new PluginIllegalException("The file " + file.getAbsolutePath() + " is not a class file");
-        }
+        return true;
+    }
+
+    @Override
+    protected Plugin getPluginInstance(File file) {
+        log.trace("Find plugin: [{}] from class", file.getName());
+        String pluginClassName = getPluginClassName(file);
+        loadPluginClass(file, pluginClassName);
+        Class<?> pluginClass = getPluginClass(pluginClassName);
+        return getInstance(pluginClass);
+    }
+
+    private void loadPluginClass(File file, String className) {
         FileInputStream fileInputStream;
         byte[] bytes;
-
         try {
             fileInputStream = new FileInputStream(file);
             bytes = fileInputStream.readAllBytes();
             fileInputStream.close();
         } catch (IOException e) {
-            throw new PluginLoadException(e);
+            throw new PluginRuntimeException(e);
         }
-        String name = file.getName();
-        String className = name.substring(0, name.lastIndexOf('.'));
-        Class<?> pluginClass = classLoader.defineClass(className, bytes);
-        Field instanceField;
-        Object instance;
+        classLoader.defineClass(null, bytes);
+    }
+
+    private Class<?> getPluginClass(String className) {
         try {
-            instanceField = pluginClass.getDeclaredField("INSTANCE");
-            instanceField.setAccessible(true);
-            instance = instanceField.get(null);
-        } catch (NoSuchFieldException | IllegalAccessException e) {
-            throw new PluginLoadException("Failed to find INSTANCE in plugin: " + file.getAbsolutePath(), e);
+            return Class.forName(className, false, classLoader);
+        } catch (ClassNotFoundException e) {
+            throw new PluginIllegalException(String.format("Failed to find class: %s", e));
         }
-        return (Plugin) instance;
+    }
+
+    private String getPluginClassName(File file) {
+        String name = file.getName();
+        return name.substring(0, name.lastIndexOf('.'));
     }
 }
