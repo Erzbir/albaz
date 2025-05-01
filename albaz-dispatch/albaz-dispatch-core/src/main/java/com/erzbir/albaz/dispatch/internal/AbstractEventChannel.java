@@ -21,6 +21,11 @@ public abstract class AbstractEventChannel<E extends Event> implements EventChan
         this.baseEventClass = baseEventClass;
     }
 
+    @Override
+    public Class<E> getBaseEventClass() {
+        return baseEventClass;
+    }
+
     public abstract <T extends E> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle);
 
     public void close() {

@@ -1,12 +1,12 @@
 package com.erzbir.albaz.plugin.exception;
 
 import com.erzbir.albaz.common.ExceptionHandler;
-import com.erzbir.albaz.plugin.PluginContext;
+import com.erzbir.albaz.plugin.PluginHandle;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-public interface PluginExceptionHandler extends ExceptionHandler<PluginContext> {
+public interface PluginExceptionHandler extends ExceptionHandler<PluginHandle> {
 
 }

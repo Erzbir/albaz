@@ -53,7 +53,7 @@ public abstract class AbstractPluginLoader implements PluginLoader {
     }
 
     protected void loadJars(Path pluginPath, PluginClassLoader pluginClassLoader) {
-        log.trace("Loading classes from [{}]", pluginPath);
+        log.trace("Loading jars from [{}]", pluginPath);
         for (String jarsDirectory : pluginClasspath.getJarsDirectories()) {
             Path file = pluginPath.resolve(jarsDirectory);
             List<File> jars = getJars(file);

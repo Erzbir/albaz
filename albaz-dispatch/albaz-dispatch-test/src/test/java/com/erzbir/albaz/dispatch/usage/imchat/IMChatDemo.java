@@ -21,7 +21,7 @@ import static com.erzbir.albaz.dispatch.usage.PrintConstants.RESET;
 public class IMChatDemo {
     public static void main(String[] args) throws Exception {
         IMChatDemo IMChatDemo = new IMChatDemo();
-        AsyncEventDispatcher eventDispatcher = AsyncEventDispatcher.of(EventDispatcherProvider.INSTANCE.getInstance("com.erzbir.albaz.dispatch.internal.NotificationEventDispatcher"));
+        AsyncEventDispatcher eventDispatcher = AsyncEventDispatcher.of(EventDispatcherProvider.INSTANCE.getInstance("com.erzbir.albaz.dispatch.internal.PollingEventDispatcher"));
 //        eventDispatcher = eventDispatcher.async();
         try {
             IMChatDemo.demoRun(eventDispatcher);
@@ -73,7 +73,6 @@ public class IMChatDemo {
             public ListenerStatus onEvent(GroupMessageEvent event) {
                 GroupMessage message = event.getMessage();
                 System.out.println(BLUE + "Received group message: " + message.message + " in group: " + message.group + RESET);
-                // listen only once
                 return ListenerStatus.CONTINUE;
             }
         });
@@ -95,7 +94,6 @@ public class IMChatDemo {
 
         @Override
         public boolean intercept(UserMessageEvent target) {
-//            throw new IllegalArgumentException("asss");
             return target.getMessage().user.equals("Albaz");
         }
 

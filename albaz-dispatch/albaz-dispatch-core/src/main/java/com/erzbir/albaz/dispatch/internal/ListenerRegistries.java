@@ -47,12 +47,12 @@ final class ListenerRegistries {
 
     public <E extends Event> void callListeners(E event, Listener.Priority priority, BiConsumer<ListenerRegistry, E> consumer) {
         List<ListenerRegistry> listeners = getListenersWithPriority(priority);
-        listeners.stream()
-                .filter(registry ->
-                        registry.eventType()
-                                .isInstance(event))
-                .forEach(registry ->
-                        consumer.accept(registry, event));
+        for (int i = 0; i < listeners.size(); i++) {
+            ListenerRegistry registry = listeners.get(i);
+            if (registry.eventType().isInstance(event)) {
+                consumer.accept(registry, event);
+            }
+        }
     }
 
     public <E extends Event> void callListeners(E event, BiConsumer<ListenerRegistry, E> consumer) {

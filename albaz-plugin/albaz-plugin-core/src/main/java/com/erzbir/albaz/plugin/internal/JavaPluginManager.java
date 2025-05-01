@@ -18,9 +18,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * <p>
@@ -49,8 +49,8 @@ public class JavaPluginManager implements PluginManager {
         }
     }
 
-    protected final Map<String, PluginWrapper> plugins = new HashMap<>();
-    protected final Map<String, ClassLoader> pluginClassLoaders = new HashMap<>();
+    protected final Map<String, PluginWrapper> plugins = new ConcurrentHashMap<>();
+    protected final Map<String, ClassLoader> pluginClassLoaders = new ConcurrentHashMap<>();
 
     public JavaPluginManager() {
     }
@@ -92,20 +92,20 @@ public class JavaPluginManager implements PluginManager {
             return;
         }
 
-        PluginContext pluginContext = new PluginContext(plugin, pluginLoader.getClassLoader(), pluginPath);
-        PluginDescription description = findDescription(pluginContext);
+        PluginHandle pluginHandle = new PluginHandle(plugin, pluginLoader.getClassLoader(), pluginPath);
+        PluginDescription description = findDescription(pluginHandle);
 
         if (plugins.containsKey(description.id())) {
             throw new PluginAlreadyLoadedException(String.format("Plugin [%s] already loaded with id [%s]", pluginPath.getFileName(), description.id()));
         }
 
-        PluginWrapper pluginWrapper = new PluginWrapper(pluginContext, description);
+        PluginWrapper pluginWrapper = new PluginWrapper(pluginHandle, description);
         registerPlugin(pluginWrapper, pluginLoader.getClassLoader(), pluginPath);
         log.info("Plugin: [{}] loaded", plugin);
     }
 
-    private PluginDescription findDescription(PluginContext pluginContext) {
-        return PluginDescFinder.find(pluginContext);
+    private PluginDescription findDescription(PluginHandle pluginHandle) {
+        return PluginDescFinder.find(pluginHandle);
     }
 
     private PluginLoader createPluginLoader(Path path) {

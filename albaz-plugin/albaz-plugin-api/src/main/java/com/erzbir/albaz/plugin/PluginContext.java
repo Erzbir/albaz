@@ -1,10 +1,53 @@
 package com.erzbir.albaz.plugin;
 
-import java.nio.file.Path;
+import com.erzbir.albaz.common.Attribute;
+import com.erzbir.albaz.common.AttributeContainer;
+import com.erzbir.albaz.common.AttributeMap;
 
 /**
  * @author Erzbir
  * @since 1.0.0
  */
-public record PluginContext(Plugin plugin, ClassLoader classLoader, Path path) {
+public final class PluginContext implements AttributeContainer<Object, Object> {
+    private final AttributeContainer<Object, Object> delegate = new AttributeMap<>();
+
+    @Override
+    public void put(Attribute<Object, Object> attribute) {
+        delegate.put(attribute);
+    }
+
+    @Override
+    public void putIfAbsent(Attribute<Object, Object> attribute) {
+        delegate.putIfAbsent(attribute);
+    }
+
+    @Override
+    public Attribute<Object, Object> remove(Attribute.Key<Object> key) {
+        return delegate.remove(key);
+    }
+
+    @Override
+    public boolean remove(Attribute.Key<Object> key, Attribute<Object, Object> attribute) {
+        return delegate.remove(key, attribute);
+    }
+
+    @Override
+    public Attribute<Object, Object> get(Attribute.Key<Object> key) {
+        return delegate.get(key);
+    }
+
+    @Override
+    public boolean contains(Attribute<Object, Object> attribute) {
+        return delegate.contains(attribute);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return delegate.isEmpty();
+    }
+
+    @Override
+    public int size() {
+        return delegate.size();
+    }
 }

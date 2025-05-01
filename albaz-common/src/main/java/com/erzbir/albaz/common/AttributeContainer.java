@@ -7,15 +7,19 @@ package com.erzbir.albaz.common;
  * @since 1.0.0
  */
 public interface AttributeContainer<K, V> {
-    void putAttribute(Attribute<K, V> attribute);
+    void put(Attribute<K, V> attribute);
 
-    void putIfAbsentAttribute(Attribute<K, V> attribute);
+    void putIfAbsent(Attribute<K, V> attribute);
 
-    Attribute<K, V> removeAttribute(Attribute.Key<K> key);
+    Attribute<K, V> remove(Attribute.Key<K> key);
 
-    boolean removeAttribute(Attribute.Key<K> key, Attribute<K, V> attribute);
+    boolean remove(Attribute.Key<K> key, Attribute<K, V> attribute);
 
-    Attribute<K, V> getAttribute(Attribute.Key<K> key);
+    Attribute<K, V> get(Attribute.Key<K> key);
 
-    boolean containsAttribute(Attribute<K, V> attribute);
+    boolean contains(Attribute<K, V> attribute);
+
+    boolean isEmpty();
+
+    int size();
 }

@@ -66,7 +66,7 @@ class UserMessageEvent extends AbstractEvent implements MessageEvent {
     }
 
     public void reply(String msg) {
-        System.out.println(GREEN + "reply message " + " to user " + message.user + ": " + msg + RESET);
+        System.out.println(GREEN + "reply message " + "to user " + message.user + ": " + msg + RESET);
     }
 
     @Override

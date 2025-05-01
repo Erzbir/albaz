@@ -1,5 +1,7 @@
 package com.erzbir.albaz.common;
 
+import java.util.Objects;
+
 /**
  * @author Erzbir
  * @since 1.0.0
@@ -60,14 +62,19 @@ public interface Attribute<K, V> {
 
             @Override
             public boolean equals(Object o) {
-                if (this == o) {
-                    return true;
-                }
-                return key.equals(o);
+                if (o == null) return false;
+                if (this == o) return true;
+                if (o instanceof Key<?> k) return Objects.equals(key, k);
+                return false;
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hashCode(key);
             }
         }
 
-        class SimpleValue implements Value<V> {
+        private class SimpleValue implements Value<V> {
             V value;
 
             public SimpleValue(V value) {
@@ -88,16 +95,21 @@ public interface Attribute<K, V> {
 
             @Override
             public boolean equals(Object o) {
-                if (this == o) {
-                    return true;
-                }
-                return value.equals(o);
+                if (o == null) return false;
+                if (this == o) return true;
+                if (o instanceof Value<?> v) return Objects.equals(value, v);
+                return false;
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hashCode(value);
             }
         }
 
         private class SimpleAttribute implements Attribute<K, V> {
-            private Key<K> key;
-            private Value<V> value;
+            private final Key<K> key;
+            private final Value<V> value;
 
             public SimpleAttribute(Key<K> key, Value<V> value) {
                 this.key = key;
@@ -124,6 +136,21 @@ public interface Attribute<K, V> {
             public Attribute<K, V> setValue(V value) {
                 this.value.setValue(value);
                 return this;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (o == null) return false;
+                if (this == o) return true;
+                if (o instanceof Attribute<?, ?> attr) {
+                    return Objects.equals(key, attr.getKey()) && Objects.equals(value, attr.getValue());
+                }
+                return false;
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(key, value);
             }
         }
     }

@@ -3,8 +3,8 @@ package com.erzbir.albaz.plugin.internal;
 import com.erzbir.albaz.logging.Log;
 import com.erzbir.albaz.logging.LogFactory;
 import com.erzbir.albaz.plugin.Plugin;
-import com.erzbir.albaz.plugin.PluginContext;
 import com.erzbir.albaz.plugin.PluginDescription;
+import com.erzbir.albaz.plugin.PluginHandle;
 import com.erzbir.albaz.plugin.exception.PluginExceptionHandler;
 
 import java.util.concurrent.ExecutorService;
@@ -17,20 +17,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class PluginWrapper implements Plugin {
     public final PluginDescription description;
-    public final PluginContext pluginContext;
+    public final PluginHandle pluginHandle;
     private final Plugin delegate;
     private final AtomicBoolean enable = new AtomicBoolean(false);
     private final PluginExceptionHandler exceptionHandler;
     private final ExecutorService sandbox = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Sandbox-", 0).factory());
 
 
-    public PluginWrapper(PluginContext pluginContext, PluginDescription description) {
-        this(pluginContext, description, DefaultPluginExceptionHandler.INSTANCE);
+    public PluginWrapper(PluginHandle pluginHandle, PluginDescription description) {
+        this(pluginHandle, description, DefaultPluginExceptionHandler.INSTANCE);
     }
 
-    public PluginWrapper(PluginContext pluginContext, PluginDescription description, PluginExceptionHandler exceptionHandler) {
-        this.delegate = pluginContext.plugin();
-        this.pluginContext = pluginContext;
+    public PluginWrapper(PluginHandle pluginHandle, PluginDescription description, PluginExceptionHandler exceptionHandler) {
+        this.delegate = pluginHandle.plugin();
+        this.pluginHandle = pluginHandle;
         this.description = description;
         this.exceptionHandler = exceptionHandler;
     }
@@ -41,7 +41,7 @@ public class PluginWrapper implements Plugin {
             try {
                 delegate.onEnable();
             } catch (Throwable throwable) {
-                exceptionHandler.handle(throwable, pluginContext);
+                exceptionHandler.handle(throwable, pluginHandle);
             }
         });
     }
@@ -52,7 +52,7 @@ public class PluginWrapper implements Plugin {
             try {
                 delegate.onDisable();
             } catch (Throwable throwable) {
-                exceptionHandler.handle(throwable, pluginContext);
+                exceptionHandler.handle(throwable, pluginHandle);
             }
         });
     }
@@ -63,7 +63,7 @@ public class PluginWrapper implements Plugin {
             try {
                 delegate.onLoad();
             } catch (Throwable throwable) {
-                exceptionHandler.handle(throwable, pluginContext);
+                exceptionHandler.handle(throwable, pluginHandle);
             }
         });
     }
@@ -74,7 +74,10 @@ public class PluginWrapper implements Plugin {
             try {
                 delegate.onUnLoad();
             } catch (Throwable throwable) {
-                exceptionHandler.handle(throwable, pluginContext);
+                exceptionHandler.handle(throwable, pluginHandle);
+            } finally {
+                sandbox.shutdownNow();
+                sandbox.close();
             }
         });
     }
@@ -84,6 +87,9 @@ public class PluginWrapper implements Plugin {
     }
 
     public void enable() {
+        if (!enable.get()) {
+
+        }
         enable.set(true);
     }
 
@@ -96,7 +102,7 @@ public class PluginWrapper implements Plugin {
         private static final Log log = LogFactory.getLog(DefaultPluginExceptionHandler.class);
 
         @Override
-        public void handle(Throwable throwable, PluginContext context) {
+        public void handle(Throwable throwable, PluginHandle context) {
             log.error("Plugin: [{}] throw a exception: ", context, throwable);
         }
     }

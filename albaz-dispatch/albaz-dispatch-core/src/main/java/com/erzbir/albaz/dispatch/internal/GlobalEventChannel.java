@@ -27,6 +27,11 @@ public final class GlobalEventChannel implements EventChannel<Event> {
     }
 
     @Override
+    public Class<Event> getBaseEventClass() {
+        return delegate.getBaseEventClass();
+    }
+
+    @Override
     public <T extends Event> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
         return delegate.registerListener(eventType, listener);
     }

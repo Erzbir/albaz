@@ -10,6 +10,7 @@ package com.erzbir.albaz.plugin;
  */
 public abstract class JavaPlugin implements Plugin {
     protected final PluginDescription description;
+    protected final PluginContext context = new PluginContext();
 
     public JavaPlugin(PluginDescription description) {
         this.description = description;

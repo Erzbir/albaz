@@ -40,10 +40,7 @@ public final class NotificationEventDispatcher extends AbstractEventDispatcher i
         if (event == null) {
             throw new IllegalArgumentException("Event must not be null");
         }
-        return CompletableFuture.runAsync(() -> dispatch(event), dispatchThreadPool).whenComplete((res, ex) -> {
-            System.exit(1);
-            log.error("Dispatching event: [{}] failed, [{}]", event, ex);
-        });
+        return CompletableFuture.runAsync(() -> dispatch(event), dispatchThreadPool).whenComplete((res, ex) -> log.error("Dispatching event: [{}] failed, [{}]", event, ex));
     }
 
     private <E extends Event> void runDispatchTask(E event) {

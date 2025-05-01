@@ -6,10 +6,6 @@ import java.net.URI;
 import java.nio.file.Path;
 
 /**
- * <p>
- * Java 插件需继承这个抽象类
- * </p>
- *
  * @author Erzbir
  * @since 1.0.0
  */

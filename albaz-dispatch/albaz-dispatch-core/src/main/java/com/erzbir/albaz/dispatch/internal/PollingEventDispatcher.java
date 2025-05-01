@@ -44,7 +44,7 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
     @Override
     protected void dispatchTo(Event event) {
         eventQueue.add(event);
-        if (suspended.compareAndSet(true, false)) {
+        if (suspended.get()) {
             LockSupport.unpark(dispatcherThread);
         }
     }
@@ -55,9 +55,7 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
         if (event == null) {
             throw new IllegalArgumentException("Event must not be null");
         }
-        return CompletableFuture.runAsync(() -> dispatch(event), dispatchThreadPool).whenComplete((res, ex) -> {
-            log.error("Dispatching event: [{}] failed [{}]", event, ex);
-        });
+        return CompletableFuture.runAsync(() -> dispatch(event), dispatchThreadPool).whenComplete((res, ex) -> log.error("Dispatching event: [{}] failed [{}]", event, ex));
     }
 
 
@@ -69,20 +67,26 @@ public final class PollingEventDispatcher extends AbstractEventDispatcher implem
         }
         dispatchThreadPool = Executors.newThreadPerTaskExecutor(Thread.ofVirtual().name("Dispatch-Thread-", 0).factory());
         activated.set(true);
-        Runnable runnable = () -> {
+        Runnable runnable = createPollRunnable();
+        dispatcherThread = Thread.ofVirtual().name("Dispatch-Thread-Main").start(runnable);
+    }
+
+    private Runnable createPollRunnable() {
+        List<Event> tempEvents = new ArrayList<>(batchSize);
+        return () -> {
             while (isActive() && !Thread.currentThread().isInterrupted() && dispatcherThread != null) {
                 if (eventQueue.isEmpty()) {
                     suspended.set(true);
                     LockSupport.park();
+                    suspended.set(false);
                 }
-                List<Event> events = new ArrayList<>(batchSize);
-                eventQueue.drainTo(events, batchSize);
-                for (Event event : events) {
+                eventQueue.drainTo(tempEvents, batchSize);
+                for (Event event : tempEvents) {
                     dispatchThreadPool.execute(createDispatchTask(event));
                 }
+                tempEvents.clear();
             }
         };
-        dispatcherThread = Thread.ofVirtual().name("Dispatch-Thread-Main").start(runnable);
     }
 
     private <E extends Event> Runnable createDispatchTask(E event) {

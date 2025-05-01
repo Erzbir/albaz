@@ -1,7 +1,6 @@
 package com.erzbir.albaz.dispatch.channel;
 
 import com.erzbir.albaz.common.Closeable;
-import com.erzbir.albaz.common.Interceptor;
 import com.erzbir.albaz.dispatch.event.Event;
 import com.erzbir.albaz.dispatch.listener.Listener;
 import com.erzbir.albaz.dispatch.listener.ListenerHandle;
@@ -22,11 +21,10 @@ import java.util.function.Predicate;
  * </p>
  *
  * @author Erzbir
- * @see Interceptor
  * @since 1.0.0
  */
 public interface EventChannel<E extends Event> extends Closeable {
-//    Class<E> getBaseEventClass();
+    Class<E> getBaseEventClass();
 
     /**
      * <p>

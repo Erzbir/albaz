@@ -1,7 +1,7 @@
 package com.erzbir.albaz.plugin.internal.loader;
 
 import com.erzbir.albaz.plugin.Plugin;
-import com.erzbir.albaz.plugin.PluginContext;
+import com.erzbir.albaz.plugin.PluginHandle;
 import com.erzbir.albaz.plugin.PluginDescription;
 import com.erzbir.albaz.plugin.exception.PluginIllegalException;
 import com.erzbir.albaz.plugin.exception.PluginRuntimeException;
@@ -16,13 +16,13 @@ public class PluginDescFinder {
     private PluginDescFinder() {
     }
 
-    public static PluginDescription find(PluginContext pluginContext) {
-        Class<? extends Plugin> pluginClass = pluginContext.plugin().getClass();
+    public static PluginDescription find(PluginHandle pluginHandle) {
+        Class<? extends Plugin> pluginClass = pluginHandle.plugin().getClass();
         Field field = find(pluginClass);
         try {
-            return (PluginDescription) field.get(pluginContext.plugin());
+            return (PluginDescription) field.get(pluginHandle.plugin());
         } catch (IllegalAccessException e) {
-            throw new PluginIllegalException(String.format("Failed to find description in plugin: %s", pluginContext.path().getFileName()), e);
+            throw new PluginIllegalException(String.format("Failed to find description in plugin: %s", pluginHandle.path().getFileName()), e);
         }
     }
 

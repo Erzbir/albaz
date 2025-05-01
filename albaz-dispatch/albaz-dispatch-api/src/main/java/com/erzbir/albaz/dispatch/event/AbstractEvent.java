@@ -51,15 +51,13 @@ public abstract class AbstractEvent implements Event {
     @Override
     public EventContext getContext() {
         if (eventContext == null) {
-            eventContext = new EventContext();
-            eventContext.setEvent(this);
+            eventContext = new EventContext(this);
         }
         return eventContext;
     }
 
     @Override
     public void setContext(EventContext context) {
-        context.setEvent(this);
         this.eventContext = context;
     }
 

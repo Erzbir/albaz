@@ -79,17 +79,12 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
             return;
         }
         if (listenerRegistries.isEmpty()) {
-            log.debug("EventChannel: [{}] has no listeners, broadcasting canceled", getClass().getSimpleName());
-        }
-        // 防止重复广播事件, 事件在监听器中被异步修改
-        Lock broadcastLock = event.getBroadcastLock();
-        try {
-            broadcastLock.lockInterruptibly();
-        } catch (InterruptedException e) {
-            log.debug("EventChannel: [{}] is interrupted, broadcasting canceled", getClass().getSimpleName());
-            Thread.currentThread().interrupt();
+            log.warn("EventChannel: [{}] has no listeners, broadcasting canceled", getClass().getSimpleName());
             return;
         }
+        // 防止重复广播事件
+        Lock broadcastLock = event.getBroadcastLock();
+        broadcastLock.lock();
         callListeners((AbstractEvent) event);
         broadcastLock.unlock();
     }
@@ -97,7 +92,7 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
     @SuppressWarnings({"unchecked", "rawtypes"})
     @Override
     public <T extends E> ListenerHandle registerListener(Class<T> eventType, Listener<T> listener) {
-        if (eventType == null && listener == null) {
+        if (eventType == null || listener == null) {
             throw new IllegalArgumentException("EventType and listener must not be null");
         }
         SafeListener safeListener = createSafeListener((Listener<E>) listener);
@@ -108,7 +103,7 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
     @SuppressWarnings({"unchecked"})
     @Override
     public <T extends E> ListenerHandle subscribe(Class<T> eventType, Function<T, ListenerStatus> handle) {
-        if (eventType == null && handle == null) {
+        if (eventType == null || handle == null) {
             throw new IllegalArgumentException("EventType and handle must not be null");
         }
         Listener<E> listener = createListener((Function<E, ListenerStatus>) handle);
@@ -117,7 +112,7 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
 
     @Override
     public <T extends E> ListenerHandle subscribeOnce(Class<T> eventType, Consumer<T> handle) {
-        if (eventType == null && handle == null) {
+        if (eventType == null || handle == null) {
             throw new IllegalArgumentException("EventType and handle must not be null");
         }
         return subscribe(eventType, event -> {
@@ -128,7 +123,7 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
 
     @Override
     public <T extends E> ListenerHandle subscribeAlways(Class<T> eventType, Consumer<T> handle) {
-        if (eventType == null && handle == null) {
+        if (eventType == null || handle == null) {
             throw new IllegalArgumentException("EventType and handle must not be null");
         }
         return subscribe(eventType, event -> {
@@ -325,8 +320,8 @@ class EventChannelImpl<E extends Event> extends AbstractEventChannel<E> {
                 }
                 ListenerStatus listenerStatus = delegate.onEvent(event);
                 switch (listenerStatus) {
-                    case ListenerStatus.Status.STOP -> inactive();
-                    case ListenerStatus.Status.TRUNCATED -> truncate();
+                    case ListenerStatus.STOP -> inactive();
+                    case ListenerStatus.TRUNCATED -> truncate();
                     default -> {
                     }
                 }
